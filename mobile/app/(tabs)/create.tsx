@@ -97,7 +97,7 @@ export default function CreateTabScreen() {
               {draft.title || "Untitled Campaign Draft"}
             </Text>
             <Text style={[styles.resumeSub, typography.caption]} numberOfLines={2}>
-              {draft.summary || "Click continue to pick up right where you left off."}
+              {draft.summary || "Pick up right where you left off. All your changes have been auto-saved."}
             </Text>
 
             <TouchableOpacity
@@ -105,7 +105,7 @@ export default function CreateTabScreen() {
               onPress={handleResumeDraft}
               activeOpacity={0.8}
             >
-              <Text style={[styles.resumeButtonText, typography.h3]}>Continue Draft</Text>
+              <Text style={[styles.resumeButtonText, typography.h3]}>Resume draft</Text>
               <Ionicons name="arrow-forward" size={16} color={colors.white} />
             </TouchableOpacity>
           </View>
@@ -147,9 +147,9 @@ export default function CreateTabScreen() {
             <Ionicons name="mic-outline" size={26} color={colors.amberDark} />
           </View>
           <View style={styles.modeTextWrap}>
-            <Text style={[styles.modeTitle, typography.h2]}>Describe with Voice / AI</Text>
+            <Text style={[styles.modeTitle, typography.h2]}>Create with Your Voice</Text>
             <Text style={[styles.modeDesc, typography.body]}>
-              Speak aloud or type your idea. AI will propose a title, category, and story outline for your review.
+              Speak aloud or type your message. AI will propose a draft structure that you can freely edit in Step 1.
             </Text>
             <View style={styles.stepsPillRow}>
               <Text style={[styles.stepsPill, typography.micro]}>SPEECH-TO-TEXT</Text>
@@ -217,6 +217,19 @@ export default function CreateTabScreen() {
                 value={voiceText}
                 onChangeText={setVoiceText}
               />
+
+              {/* Canned transcript helper */}
+              <TouchableOpacity
+                style={styles.sampleChip}
+                onPress={() =>
+                  setVoiceText(
+                    "Our community initiative is advocating for clean drinking water in all 42 regional public schools. Recent state tests showed lead levels exceeding safety thresholds in 340 fountains. We want to amplify scientific reports and push the district to allocate modern filtration funding before next month's board meeting."
+                  )
+                }
+              >
+                <Ionicons name="sparkles-outline" size={14} color={colors.primary} />
+                <Text style={[styles.sampleChipText, typography.micro]}>Insert Canned Transcript Demo</Text>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.generateBtn, !voiceText && styles.generateBtnDisabled]}
@@ -451,5 +464,19 @@ const styles = StyleSheet.create({
   },
   generateBtnText: {
     color: colors.white,
+  },
+  sampleChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: spacing.radiusFull,
+    gap: 6,
+    alignSelf: "flex-start",
+    marginBottom: spacing.md,
+  },
+  sampleChipText: {
+    color: colors.primary,
   },
 });

@@ -46,6 +46,12 @@ export const typography = {
   },
 
   // Clean Sans for UI controls, inputs, buttons, headers, and metadata
+  uiH1: {
+    fontFamily: sansFont,
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: "700" as TextStyle["fontWeight"],
+  },
   uiTitle: {
     fontFamily: sansFont,
     fontSize: 20,

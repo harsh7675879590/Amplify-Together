@@ -1,9 +1,11 @@
 export const spacing = {
-  // Strict spacing scale: 4, 8, 12, 16, 24, 32, 48 (with s10/s20 helpers)
+  // Strict spacing scale: 4, 8, 12, 16, 24, 32, 48 (with s6, s10, s14, s20 helpers)
   s4: 4,
+  s6: 6,
   s8: 8,
   s10: 10,
   s12: 12,
+  s14: 14,
   s16: 16,
   s20: 20,
   s24: 24,

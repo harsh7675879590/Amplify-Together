@@ -9,6 +9,8 @@ export interface DraftState {
   currentStep: number;
   isSaving: boolean;
   lastSavedAt: string | null;
+  lastSavedIndicator: string;
+  isVoiceGenerated: boolean;
 
   // Step 1: Basics
   title: string;
@@ -20,6 +22,7 @@ export interface DraftState {
   // Step 2: Story & Sources
   story: StoryBlock[];
   sources: SourceItem[];
+  audienceActions: string[];
 
   // Step 3: Visuals & Ad Creative
   adHeadline: string;
@@ -40,24 +43,31 @@ export interface DraftState {
   // Actions
   setDraftId: (id: string) => void;
   setCurrentStep: (step: number) => void;
+  setIsVoiceGenerated: (val: boolean) => void;
   updateBasics: (fields: Partial<Pick<DraftState, "title" | "category" | "creatorName" | "summary" | "coverImageUrl">>) => void;
   updateStory: (story: StoryBlock[]) => void;
   updateSources: (sources: SourceItem[]) => void;
+  updateAudienceActions: (actions: string[]) => void;
   updateVisuals: (fields: Partial<Pick<DraftState, "adHeadline" | "adDescription" | "ctaText" | "adImageUrl">>) => void;
   updateReach: (fields: Partial<Pick<DraftState, "locations" | "interests" | "channels" | "durationDays">>) => void;
   setFundingGoal: (goal: string) => void;
   setAgreedToTerms: (agreed: boolean) => void;
   populateFromAI: (data: any) => void;
   saveToServer: () => Promise<void>;
+  debounceSave: () => void;
   loadFromServer: () => Promise<void>;
   resetDraft: () => void;
 }
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useDraftStore = create<DraftState>((set, get) => ({
   draftId: null,
   currentStep: 1,
   isSaving: false,
   lastSavedAt: null,
+  lastSavedIndicator: "Saved just now",
+  isVoiceGenerated: false,
 
   title: "",
   category: "Environment",
@@ -72,6 +82,11 @@ export const useDraftStore = create<DraftState>((set, get) => ({
     { type: "paragraph", text: "" },
   ],
   sources: [{ title: "", url: "" }],
+  audienceActions: [
+    "Sign the regional petition",
+    "Attend the upcoming public hearing",
+    "Contact your municipal representative",
+  ],
 
   adHeadline: "",
   adDescription: "",
@@ -83,40 +98,56 @@ export const useDraftStore = create<DraftState>((set, get) => ({
   channels: ["Social Media Feeds", "Independent Digital News"],
   durationDays: 30,
 
-  fundingGoal: "", // Must be entered by creator in Step 5
+  fundingGoal: "", // Must be entered by creator in Step 5 (starts empty)
   agreedToTerms: false,
 
   setDraftId: (id) => set({ draftId: id }),
   setCurrentStep: (step) => set({ currentStep: step }),
+  setIsVoiceGenerated: (val) => set({ isVoiceGenerated: val }),
+
+  debounceSave: () => {
+    set({ isSaving: true, lastSavedIndicator: "Saving..." });
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+    }
+    saveTimer = setTimeout(() => {
+      get().saveToServer();
+    }, 800);
+  },
 
   updateBasics: (fields) => {
     set((state) => ({ ...state, ...fields }));
-    get().saveToServer();
+    get().debounceSave();
   },
 
   updateStory: (story) => {
     set({ story });
-    get().saveToServer();
+    get().debounceSave();
   },
 
   updateSources: (sources) => {
     set({ sources });
-    get().saveToServer();
+    get().debounceSave();
+  },
+
+  updateAudienceActions: (audienceActions) => {
+    set({ audienceActions });
+    get().debounceSave();
   },
 
   updateVisuals: (fields) => {
     set((state) => ({ ...state, ...fields }));
-    get().saveToServer();
+    get().debounceSave();
   },
 
   updateReach: (fields) => {
     set((state) => ({ ...state, ...fields }));
-    get().saveToServer();
+    get().debounceSave();
   },
 
   setFundingGoal: (fundingGoal) => {
     set({ fundingGoal });
-    get().saveToServer();
+    get().debounceSave();
   },
 
   setAgreedToTerms: (agreedToTerms) => set({ agreedToTerms }),
@@ -130,17 +161,18 @@ export const useDraftStore = create<DraftState>((set, get) => ({
       adHeadline: aiData.ad_headline || state.adHeadline,
       adDescription: aiData.ad_description || state.adDescription,
       ctaText: aiData.cta_text || state.ctaText,
+      isVoiceGenerated: true,
       // FUNDING GOAL IS STRICTLY NEVER POPULATED BY AI
       currentStep: 1,
     }));
-    get().saveToServer();
+    get().debounceSave();
   },
 
   saveToServer: async () => {
     const s = get();
     if (!s.draftId) return;
     try {
-      set({ isSaving: true });
+      set({ isSaving: true, lastSavedIndicator: "Saving..." });
       const payload = {
         title: s.title,
         category: s.category,
@@ -149,6 +181,7 @@ export const useDraftStore = create<DraftState>((set, get) => ({
         cover_image_url: s.coverImageUrl,
         story: s.story,
         sources: s.sources.filter((x) => x.title && x.url),
+        audience_actions: s.audienceActions,
         ad_headline: s.adHeadline,
         ad_description: s.adDescription,
         cta_text: s.ctaText,
@@ -162,9 +195,13 @@ export const useDraftStore = create<DraftState>((set, get) => ({
         funding_goal: parseFloat(s.fundingGoal) || 0,
       };
       await api.saveDraft(s.draftId, s.currentStep, payload);
-      set({ isSaving: false, lastSavedAt: new Date().toLocaleTimeString() });
+      set({
+        isSaving: false,
+        lastSavedIndicator: "Saved just now",
+        lastSavedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      });
     } catch {
-      set({ isSaving: false });
+      set({ isSaving: false, lastSavedIndicator: "Saved offline" });
     }
   },
 
@@ -183,11 +220,13 @@ export const useDraftStore = create<DraftState>((set, get) => ({
           coverImageUrl: d.cover_image_url || d.coverImageUrl || "",
           story: d.story && d.story.length > 0 ? (d.story as StoryBlock[]) : get().story,
           sources: d.sources && d.sources.length > 0 ? d.sources : [{ title: "", url: "" }],
+          audienceActions: d.audience_actions || get().audienceActions,
           adHeadline: d.ad_headline || d.adHeadline || "",
           adDescription: d.ad_description || d.adDescription || "",
           ctaText: d.cta_text || d.ctaText || "Learn More",
           adImageUrl: d.ad_image_url || d.adImageUrl || "",
           fundingGoal: d.funding_goal ? String(d.funding_goal) : d.fundingGoal ? String(d.fundingGoal) : "",
+          lastSavedIndicator: "Saved just now",
           lastSavedAt: "Loaded from cloud",
         });
       }
@@ -203,6 +242,8 @@ export const useDraftStore = create<DraftState>((set, get) => ({
       category: "Environment",
       creatorName: "",
       summary: "",
+      isVoiceGenerated: false,
+      lastSavedIndicator: "Saved just now",
       story: [
         { type: "heading", text: "The Challenge We Face" },
         { type: "paragraph", text: "" },
@@ -210,6 +251,11 @@ export const useDraftStore = create<DraftState>((set, get) => ({
         { type: "paragraph", text: "" },
       ],
       sources: [{ title: "", url: "" }],
+      audienceActions: [
+        "Sign the regional petition",
+        "Attend the upcoming public hearing",
+        "Contact your municipal representative",
+      ],
       adHeadline: "",
       adDescription: "",
       fundingGoal: "",

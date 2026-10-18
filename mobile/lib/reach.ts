@@ -20,3 +20,6 @@ export function estimateReach(adDollars: number): ReachEstimate {
       "Estimated, not guaranteed. Actual audience delivery depends on platform ad auctions, inventory availability, and regional targeting dynamics.",
   };
 }
+
+export const calculateReach = estimateReach;
+

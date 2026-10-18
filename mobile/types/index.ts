@@ -188,6 +188,8 @@ export interface DraftData {
   durationDays?: number;
   fundingGoal?: number;
   funding_goal?: number;
+  audience_actions?: string[];
+  audienceActions?: string[];
 }
 
 export interface Draft {
