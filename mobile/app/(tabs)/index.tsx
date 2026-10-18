@@ -273,7 +273,7 @@ export default function HomeScreen() {
           ))
         )}
 
-        {/* Footer with Demo Data Note */}
+        {/* Footer with Demo Data Note & Platform Links */}
         <View style={styles.footer}>
           <View style={styles.footerTag}>
             <Ionicons name="construct-outline" size={14} color={colors.textMuted} />
@@ -287,6 +287,37 @@ export default function HomeScreen() {
           <Text style={[styles.footerSub, typography.uiMicro]}>
             This is not a donation platform. Contributions fund distribution costs, not the cause or creator directly.
           </Text>
+
+          {/* Secondary Info Page Links */}
+          <View style={styles.footerLinksGrid}>
+            <TouchableOpacity onPress={() => router.push("/info/about" as any)}>
+              <Text style={[styles.footerLinkText, typography.uiCaption]}>About</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerLinkDot}>•</Text>
+            <TouchableOpacity onPress={() => router.push("/info/how-it-works" as any)}>
+              <Text style={[styles.footerLinkText, typography.uiCaption]}>How It Works</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerLinkDot}>•</Text>
+            <TouchableOpacity onPress={() => router.push("/info/faqs" as any)}>
+              <Text style={[styles.footerLinkText, typography.uiCaption]}>FAQs</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerLinkDot}>•</Text>
+            <TouchableOpacity onPress={() => router.push("/info/terms" as any)}>
+              <Text style={[styles.footerLinkText, typography.uiCaption]}>Terms</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerLinkDot}>•</Text>
+            <TouchableOpacity onPress={() => router.push("/info/privacy" as any)}>
+              <Text style={[styles.footerLinkText, typography.uiCaption]}>Privacy</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerLinkDot}>•</Text>
+            <TouchableOpacity onPress={() => router.push("/info/guidelines" as any)}>
+              <Text style={[styles.footerLinkText, typography.uiCaption]}>Guidelines</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerLinkDot}>•</Text>
+            <TouchableOpacity onPress={() => router.push("/info/partners" as any)}>
+              <Text style={[styles.footerLinkText, typography.uiCaption]}>Partners</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -599,5 +630,21 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: "center",
     marginTop: 2,
+  },
+  footerLinksGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+    paddingHorizontal: 8,
+  },
+  footerLinkText: {
+    color: colors.primary,
+    fontWeight: "600",
+  },
+  footerLinkDot: {
+    color: colors.textMuted,
   },
 });

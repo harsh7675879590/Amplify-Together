@@ -4,7 +4,8 @@ import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
 
 interface ProgressBarProps {
-  percent: number;
+  percent?: number;
+  progress?: number;
   height?: number;
   color?: string;
   backgroundColor?: string;
@@ -12,11 +13,13 @@ interface ProgressBarProps {
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   percent,
+  progress,
   height = 8,
   color = colors.primary,
   backgroundColor = colors.slate200,
 }) => {
-  const clamped = Math.min(Math.max(percent, 0), 100);
+  const actualPercent = percent !== undefined ? percent : (progress !== undefined ? progress : 0);
+  const clamped = Math.min(Math.max(actualPercent, 0), 100);
 
   return (
     <View style={[styles.track, { height, backgroundColor, borderRadius: height / 2 }]}>

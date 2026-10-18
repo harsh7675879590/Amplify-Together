@@ -1240,7 +1240,7 @@ export default function CreateWizardScreen() {
               <View style={styles.reachEstimateTop}>
                 <Ionicons name="people" size={24} color={colors.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.reachRangeTitle, typography.uiH2]}>{reachCalc.formattedRange} People</Text>
+                  <Text style={[styles.reachRangeTitle, typography.uiH2]}>{reachCalc.formattedRange}</Text>
                   <Text style={[styles.reachDisclaimerLabel, typography.micro]}>
                     ESTIMATED REACH RANGE • NOT A GUARANTEE
                   </Text>

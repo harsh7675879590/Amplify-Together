@@ -11,6 +11,7 @@ interface AccordionProps {
   children: React.ReactNode;
   defaultOpen?: boolean;
   initialExpanded?: boolean;
+  defaultExpanded?: boolean;
 }
 
 export const Accordion: React.FC<AccordionProps> = ({
@@ -19,8 +20,9 @@ export const Accordion: React.FC<AccordionProps> = ({
   children,
   defaultOpen = false,
   initialExpanded = false,
+  defaultExpanded = false,
 }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen || initialExpanded);
+  const [isOpen, setIsOpen] = useState(defaultOpen || initialExpanded || defaultExpanded);
 
 
   return (
