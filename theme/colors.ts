@@ -1,47 +1,39 @@
 export const colors = {
-  // Brand Primary & Accents (matching campaign-one-pearl reference site)
-  primary: "#4F46E5", // Indigo 600
-  primaryDark: "#3730A3", // Indigo 800
-  primaryLight: "#EEF2FF", // Indigo 50
-  accent: "#6366F1", // Indigo 500
-  
-  // Backing Action / Highlight (warm amber)
-  amber: "#F59E0B",
-  amberLight: "#FEF3C7",
-  amberDark: "#B45309",
+  // Brand Primary & Accents (Calm, credible editorial tone)
+  primary: "#1E3A5F", // Deep slate navy
+  primaryHover: "#152843",
+  primaryLight: "#EDF3FA", // Soft tinted background
+  accent: "#D97706", // Warm amber (used sparingly for primary CTAs)
+  accentHover: "#B45309",
+  accentLight: "#FEF3C7", // Soft warm gold
 
-  // Success / Funded (emerald green)
-  success: "#10B981",
-  successLight: "#D1FAE5",
-  successDark: "#047857",
+  // Surface & Canvas
+  background: "#FBFBFA", // Warm off-white newsprint feel
+  surface: "#FFFFFF", // Card surface
+  surfaceElevated: "#FFFFFF",
+  border: "#E5E7EB", // Subtle crisp divider
+  borderLight: "#F3F4F6",
 
-  // Warning & Error
-  warning: "#F97316",
-  warningLight: "#FFEDD5",
-  error: "#EF4444",
-  errorLight: "#FEE2E2",
+  // Typography Neutrals (WCAG AA High Contrast)
+  textPrimary: "#111827", // Heading text
+  textSecondary: "#374151", // Longform article body
+  textMuted: "#6B7280", // Metadata / captions
+  textInverse: "#FFFFFF",
 
-  // Neutral Scales
-  slate900: "#0F172A", // Dark heading text
-  slate800: "#1E293B",
-  slate700: "#334155", // Body text
-  slate600: "#475569",
-  slate500: "#64748B", // Secondary text / metadata
-  slate400: "#94A3B8",
-  slate300: "#CBD5E1", // Borders
-  slate200: "#E2E8F0", // Light divider
-  slate100: "#F1F5F9", // Card surface background
-  slate50: "#F8FAFC", // Page canvas background
-  
+  // Semantic Status Colors
+  success: "#059669",
+  successLight: "#ECFDF5",
+  successDark: "#065F46",
+
+  warning: "#D97706",
+  warningLight: "#FFFBEB",
+
+  error: "#DC2626",
+  errorLight: "#FEF2F2",
+
+  info: "#2563EB",
+  infoLight: "#EFF6FF",
+
   white: "#FFFFFF",
   black: "#000000",
-
-  // Semantic mappings
-  background: "#F8FAFC",
-  card: "#FFFFFF",
-  cardBorder: "#E2E8F0",
-  textPrimary: "#0F172A",
-  textSecondary: "#475569",
-  textMuted: "#64748B",
-  textInverse: "#FFFFFF",
 };

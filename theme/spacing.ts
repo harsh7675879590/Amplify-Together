@@ -1,15 +1,18 @@
 export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
-  huge: 48,
-  radiusSm: 6,
-  radiusMd: 10,
-  radiusLg: 16,
-  radiusXl: 24,
+  // Strict spacing scale: 4, 8, 12, 16, 24, 32, 48.
+  s4: 4,
+  s8: 8,
+  s12: 12,
+  s16: 16,
+  s24: 24,
+  s32: 32,
+  s48: 48,
+
+  // Semantic radius scale
+  radiusInput: 12,
+  radiusCard: 20,
   radiusFull: 9999,
+
+  // Touch Target Minimum
+  minTouchTarget: 44,
 };
