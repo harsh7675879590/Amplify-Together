@@ -187,7 +187,7 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
           activeOpacity={0.8}
         >
           <Text style={[styles.ctaButtonText, typography.uiH3]}>
-            {campaign.status === "completed" ? "View Distribution Report" : "Amplify This Message"}
+            {campaign.status === "completed" ? "View Distribution Report" : "Back This Campaign"}
           </Text>
           <Ionicons
             name={campaign.status === "completed" ? "bar-chart-outline" : "arrow-forward"}

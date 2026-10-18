@@ -118,29 +118,38 @@ export const api = {
   async getCampaigns(params: {
     category?: string;
     search?: string;
-    sort?: string;
+    sort?: "funded" | "ending_soon" | "newest" | "closest_to_goal" | "recent" | "trending" | string;
     status?: string;
+    minProgress?: number;
   } = {}): Promise<Campaign[]> {
     if (USE_REAL_BACKEND) {
       const query = new URLSearchParams();
       if (params.category && params.category !== "All") query.append("category", params.category);
       if (params.search) query.append("search", params.search);
       if (params.sort) query.append("sort", params.sort);
-      if (params.status) query.append("status", params.status);
+      if (params.status && params.status !== "all") query.append("status", params.status);
+      if (params.minProgress) query.append("min_progress", String(params.minProgress));
       const res = await fetch(`${API_BASE_URL}/campaigns?${query.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch campaigns from backend");
       return res.json();
     }
 
-    await delay(300);
+    await delay(250);
     let list = [...mockCampaigns];
 
-    if (params.status) {
+    if (params.status && params.status !== "all" && params.status !== "All") {
       list = list.filter((c) => c.status === params.status);
     }
 
     if (params.category && params.category !== "All") {
       list = list.filter((c) => c.category.toLowerCase() === params.category!.toLowerCase());
+    }
+
+    if (params.minProgress !== undefined && params.minProgress > 0) {
+      list = list.filter((c) => {
+        const pct = c.percentFunded ?? c.percent_funded ?? 0;
+        return pct >= params.minProgress!;
+      });
     }
 
     if (params.search && params.search.trim().length > 0) {
@@ -149,17 +158,36 @@ export const api = {
         (c) =>
           c.title.toLowerCase().includes(q) ||
           c.summary.toLowerCase().includes(q) ||
-          c.creatorName.toLowerCase().includes(q)
+          c.creatorName.toLowerCase().includes(q) ||
+          (c.category && c.category.toLowerCase().includes(q))
       );
     }
 
     if (params.sort === "funded") {
-      list.sort((a, b) => b.amountRaised - a.amountRaised);
-    } else if (params.sort === "recent") {
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      list.sort((a, b) => (b.amountRaised || b.amount_raised || 0) - (a.amountRaised || a.amount_raised || 0));
+    } else if (params.sort === "ending_soon") {
+      list.sort((a, b) => {
+        const timeA = a.deadline ? new Date(a.deadline).getTime() : Number.MAX_SAFE_INTEGER;
+        const timeB = b.deadline ? new Date(b.deadline).getTime() : Number.MAX_SAFE_INTEGER;
+        return timeA - timeB;
+      });
+    } else if (params.sort === "newest" || params.sort === "recent") {
+      list.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+    } else if (params.sort === "closest_to_goal") {
+      list.sort((a, b) => {
+        const pctA = a.percentFunded ?? a.percent_funded ?? 0;
+        const pctB = b.percentFunded ?? b.percent_funded ?? 0;
+        const diffA = Math.abs(100 - pctA);
+        const diffB = Math.abs(100 - pctB);
+        return diffA - diffB;
+      });
     } else {
-      // Trending default
-      list.sort((a, b) => b.percentFunded - a.percentFunded);
+      // Trending default: highest funded % first
+      list.sort((a, b) => (b.percentFunded ?? b.percent_funded ?? 0) - (a.percentFunded ?? a.percent_funded ?? 0));
     }
 
     return list;
