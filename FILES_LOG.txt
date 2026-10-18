@@ -61,10 +61,14 @@ Tracking all files created, modified, or planned in the repository with paths an
     - Path: mobile/app/(tabs)/activity.tsx
     - Description: Activity tab with notifications grouped by Today / Earlier, read/unread states, followed campaigns with progress, and notification settings category toggles.
 
-## Phase 7: Secondary Pages, Polish, Accessibility
+## App Build & Submission
 
-15. [NEW] mobile/app/info/[page].tsx
-    - Path: mobile/app/info/[page].tsx
-    - Description: Reusable template for secondary information pages: About, How It Works, FAQs (with Accordion), Help, Contact, Terms, Privacy, Community Guidelines, and Partners.
+16. [NEW] mobile/eas.json
+    - Path: mobile/eas.json
+    - Description: Expo Application Services (EAS) configuration supporting direct APK artifact generation (`preview` profile with `apk` buildType) and iOS TestFlight / production builds.
+
+17. [NEW] SUBMISSION.md
+    - Path: SUBMISSION.md
+    - Description: Official Hackathon Submission Document containing the Demo Video walkthrough links, timestamped narration script, Android APK build guide, iOS TestFlight distribution steps, and judging verification path.
 
 
