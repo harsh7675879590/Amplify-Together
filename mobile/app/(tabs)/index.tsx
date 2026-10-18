@@ -10,9 +10,11 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Campaign } from "../../lib/types";
+import { Campaign } from "../../types";
 import { api } from "../../lib/api";
+import { estimateReach } from "../../lib/reach";
 import { CampaignCard } from "../../components/CampaignCard";
+import { FeaturedCarousel } from "../../components/FeaturedCarousel";
 import { SkeletonCard } from "../../components/SkeletonCard";
 import { colors } from "../../theme/colors";
 import { typography } from "../../theme/typography";
@@ -24,7 +26,7 @@ export default function HomeScreen() {
   const [featured, setFeatured] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [estimateDollars, setEstimateDollars] = useState(25);
+  const [estimateDollars, setEstimateDollars] = useState(10);
 
   const loadData = async () => {
     try {
@@ -51,7 +53,8 @@ export default function HomeScreen() {
     loadData();
   };
 
-  const estimatedPeople = estimateDollars * 120;
+  // Pure calculated reach from config
+  const currentReach = estimateReach(estimateDollars);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -64,12 +67,12 @@ export default function HomeScreen() {
         <View style={styles.topHeader}>
           <View style={styles.logoRow}>
             <View style={styles.logoIcon}>
-              <Ionicons name="megaphone" size={20} color={colors.white} />
+              <Ionicons name="megaphone" size={18} color={colors.white} />
             </View>
-            <Text style={[styles.brandTitle, typography.h2]}>Amplify Together</Text>
+            <Text style={[styles.brandTitle, typography.uiH2]}>Amplify Together</Text>
           </View>
           <View style={styles.demoTag}>
-            <Text style={[styles.demoTagText, typography.micro]}>DEMO PROTOTYPE</Text>
+            <Text style={[styles.demoTagText, typography.uiMicro]}>PROTOTYPE</Text>
           </View>
         </View>
 
@@ -77,34 +80,40 @@ export default function HomeScreen() {
         <View style={styles.heroCard}>
           <View style={styles.heroPill}>
             <Ionicons name="sparkles" size={12} color={colors.primary} />
-            <Text style={[styles.heroPillText, typography.micro]}>
+            <Text style={[styles.heroPillText, typography.uiMicro]}>
               COMMUNITY-FUNDED MESSAGE AMPLIFICATION
             </Text>
           </View>
 
-          <Text style={[styles.heroHeading, typography.hero]}>
-            Deliver important messages beyond your feed.
+          <Text style={[styles.heroHeading, typography.storyHero]}>
+            Helping important messages travel beyond creators' existing networks.
           </Text>
 
-          <Text style={[styles.heroSub, typography.body]}>
-            This is <Text style={styles.boldText}>not a donation platform</Text>. Backers pool
-            funds to pay for targeted advertising, putting evidence and stories in front of new audiences.
+          <Text style={[styles.heroSub, typography.storyBody]}>
+            Backers pool contributions toward transparent advertising distribution, delivering vital stories to audiences beyond traditional algorithms.
           </Text>
 
-          {/* Interactive Reach Estimator */}
+          {/* Illustrative Reach Line Computed From Config */}
           <View style={styles.estimatorBox}>
-            <Text style={[styles.estimatorLabel, typography.caption]}>
-              Illustrative reach estimate:
-            </Text>
-            <View style={styles.reachResultRow}>
-              <Text style={[styles.dollarAmount, typography.h1]}>${estimateDollars}</Text>
-              <Ionicons name="arrow-forward" size={16} color={colors.slate400} />
-              <View style={styles.peopleCountWrap}>
-                <Text style={[styles.peopleCount, typography.h1]}>
-                  ~{estimatedPeople.toLocaleString()}
+            <View style={styles.estimatorTopRow}>
+              <Text style={[styles.estimatorLabel, typography.uiCaption]}>
+                Illustrative reach from config:
+              </Text>
+              <View style={styles.guaranteeTag}>
+                <Ionicons name="information-circle-outline" size={12} color={colors.amberDark} />
+                <Text style={[styles.guaranteeTagText, typography.uiMicro]}>
+                  Estimate, not a guarantee
                 </Text>
-                <Text style={[styles.peopleUnit, typography.caption]}>people reached</Text>
               </View>
+            </View>
+
+            <View style={styles.reachResultRow}>
+              <Text style={[styles.illustrativeLine, typography.storyH2]}>
+                ${estimateDollars} could reach about{" "}
+                <Text style={styles.reachHighlight}>
+                  {currentReach.low.toLocaleString()}–{currentReach.high.toLocaleString()} people
+                </Text>
+              </Text>
             </View>
 
             {/* Quick Presets */}
@@ -122,7 +131,7 @@ export default function HomeScreen() {
                   <Text
                     style={[
                       styles.presetBtnText,
-                      typography.caption,
+                      typography.uiCaption,
                       estimateDollars === amt && styles.presetBtnTextActive,
                     ]}
                   >
@@ -132,8 +141,8 @@ export default function HomeScreen() {
               ))}
             </View>
 
-            <Text style={[styles.estimatorDisclaimer, typography.micro]}>
-              *Illustrative estimate (~120 people/$1). Actual delivery varies by platform auctions.
+            <Text style={[styles.estimatorDisclaimer, typography.uiMicro]}>
+              {currentReach.disclaimer}
             </Text>
           </View>
 
@@ -144,7 +153,8 @@ export default function HomeScreen() {
               onPress={() => router.push("/(tabs)/explore")}
               activeOpacity={0.8}
             >
-              <Text style={[styles.primaryHeroBtnText, typography.h3]}>Explore Campaigns</Text>
+              <Text style={[styles.primaryHeroBtnText, typography.uiH3]}>Explore Campaigns</Text>
+              <Ionicons name="compass-outline" size={18} color={colors.white} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -152,57 +162,85 @@ export default function HomeScreen() {
               onPress={() => router.push("/(tabs)/create")}
               activeOpacity={0.8}
             >
-              <Text style={[styles.secondaryHeroBtnText, typography.h3]}>Start Campaign</Text>
+              <Text style={[styles.secondaryHeroBtnText, typography.uiH3]}>Start a Campaign</Text>
+              <Ionicons name="add-circle-outline" size={18} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
         </View>
 
+        {/* Featured Campaigns Horizontal Carousel */}
+        {featured.length > 0 && (
+          <FeaturedCarousel
+            campaigns={featured}
+            title="Featured Campaigns"
+            subtitle="Curated messages undergoing community-backed distribution"
+          />
+        )}
+
         {/* How It Works Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, typography.h2]}>How It Works</Text>
-          <Text style={[styles.sectionSubtitle, typography.caption]}>
-            Transparent, community-governed message distribution
-          </Text>
-        </View>
-
-        <View style={styles.howItWorksCard}>
-          <View style={styles.stepRow}>
-            <View style={[styles.stepNumberBadge, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.stepNumberText, { color: colors.primary }]}>1</Text>
+        <View style={styles.howItWorksSection}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.howBadge}>
+              <Ionicons name="git-network-outline" size={13} color={colors.primary} />
+              <Text style={[styles.howBadgeText, typography.uiMicro]}>THE AMPLIFY LIFECYCLE</Text>
             </View>
-            <View style={styles.stepInfo}>
-              <Text style={[styles.stepTitle, typography.h3]}>Create</Text>
-              <Text style={[styles.stepDesc, typography.caption]}>
-                Creators craft an editorial story with verifiable evidence, sources, and ad creatives.
-              </Text>
-            </View>
+            <Text style={[styles.sectionTitle, typography.uiH2]}>How It Works</Text>
+            <Text style={[styles.sectionSubtitle, typography.uiCaption]}>
+              Three simple steps to fund and distribute verified public interest messages
+            </Text>
           </View>
 
-          <View style={styles.stepDivider} />
-
-          <View style={styles.stepRow}>
-            <View style={[styles.stepNumberBadge, { backgroundColor: colors.amberLight }]}>
-              <Text style={[styles.stepNumberText, { color: colors.amberDark }]}>2</Text>
+          <View style={styles.howItWorksCard}>
+            {/* Step 1: Create */}
+            <View style={styles.stepRow}>
+              <View style={[styles.stepNumberBadge, { backgroundColor: colors.primaryLight }]}>
+                <Ionicons name="create-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.stepInfo}>
+                <View style={styles.stepTitleRow}>
+                  <Text style={[styles.stepNumberLabel, typography.uiMicro]}>STEP 1</Text>
+                  <Text style={[styles.stepTitle, typography.uiH3]}>Create</Text>
+                </View>
+                <Text style={[styles.stepDesc, typography.storyBody]}>
+                  Creators draft an evidence-backed message with verified citations, story blocks, and targeted reach criteria.
+                </Text>
+              </View>
             </View>
-            <View style={styles.stepInfo}>
-              <Text style={[styles.stepTitle, typography.h3]}>Review</Text>
-              <Text style={[styles.stepDesc, typography.caption]}>
-                Platform reviewers inspect sources, verify claims, and validate ad targeting.
-              </Text>
-            </View>
-          </View>
 
-          <View style={styles.stepDivider} />
+            <View style={styles.stepConnector} />
 
-          <View style={styles.stepRow}>
-            <View style={[styles.stepNumberBadge, { backgroundColor: colors.successLight }]}>
-              <Text style={[styles.stepNumberText, { color: colors.successDark }]}>3</Text>
+            {/* Step 2: Review */}
+            <View style={styles.stepRow}>
+              <View style={[styles.stepNumberBadge, { backgroundColor: colors.amberLight }]}>
+                <Ionicons name="shield-checkmark-outline" size={18} color={colors.amberDark} />
+              </View>
+              <View style={styles.stepInfo}>
+                <View style={styles.stepTitleRow}>
+                  <Text style={[styles.stepNumberLabel, typography.uiMicro]}>STEP 2</Text>
+                  <Text style={[styles.stepTitle, typography.uiH3]}>Review</Text>
+                </View>
+                <Text style={[styles.stepDesc, typography.storyBody]}>
+                  Platform moderators verify source citations and claims to maintain community trust before backing opens.
+                </Text>
+              </View>
             </View>
-            <View style={styles.stepInfo}>
-              <Text style={[styles.stepTitle, typography.h3]}>Amplify</Text>
-              <Text style={[styles.stepDesc, typography.caption]}>
-                Backers pool micro-contributions. Once funded, ads run and transparent reports are published.
-              </Text>
+
+            <View style={styles.stepConnector} />
+
+            {/* Step 3: Amplify */}
+            <View style={styles.stepRow}>
+              <View style={[styles.stepNumberBadge, { backgroundColor: colors.successLight }]}>
+                <Ionicons name="megaphone-outline" size={18} color={colors.successDark} />
+              </View>
+              <View style={styles.stepInfo}>
+                <View style={styles.stepTitleRow}>
+                  <Text style={[styles.stepNumberLabel, typography.uiMicro]}>STEP 3</Text>
+                  <Text style={[styles.stepTitle, typography.uiH3]}>Amplify</Text>
+                </View>
+                <Text style={[styles.stepDesc, typography.storyBody]}>
+                  Backers pool micro-contributions toward ad costs, delivering the message to thousands outside the echo chamber.
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -210,16 +248,17 @@ export default function HomeScreen() {
         {/* Campaign Feed Section */}
         <View style={styles.feedHeaderRow}>
           <View>
-            <Text style={[styles.sectionTitle, typography.h2]}>Active Campaigns</Text>
-            <Text style={[styles.sectionSubtitle, typography.caption]}>
+            <Text style={[styles.sectionTitle, typography.uiH2]}>Active Campaigns</Text>
+            <Text style={[styles.sectionSubtitle, typography.uiCaption]}>
               Community messages awaiting or undergoing amplification
             </Text>
           </View>
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/explore")}
             activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={[styles.seeAllText, typography.caption]}>See all ({campaigns.length})</Text>
+            <Text style={[styles.seeAllText, typography.uiCaption]}>See all ({campaigns.length})</Text>
           </TouchableOpacity>
         </View>
 
@@ -234,13 +273,19 @@ export default function HomeScreen() {
           ))
         )}
 
-        {/* Footer Disclaimer */}
+        {/* Footer with Demo Data Note */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, typography.caption]}>
-            Campaign Amplification Platform Demo • Built for mobile evaluation
+          <View style={styles.footerTag}>
+            <Ionicons name="construct-outline" size={14} color={colors.textMuted} />
+            <Text style={[styles.footerDemoNotice, typography.uiMicro]}>
+              DEMO DATA NOTE
+            </Text>
+          </View>
+          <Text style={[styles.footerText, typography.uiCaption]}>
+            Demo data: All campaigns, metrics, and transactions shown are for evaluation and simulation purposes.
           </Text>
-          <Text style={[styles.footerSub, typography.micro]}>
-            Contributions fund distribution costs, not the cause or creator directly.
+          <Text style={[styles.footerSub, typography.uiMicro]}>
+            This is not a donation platform. Contributions fund distribution costs, not the cause or creator directly.
           </Text>
         </View>
       </ScrollView>
@@ -251,21 +296,21 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.slate50,
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.huge,
+    paddingHorizontal: spacing.s20,
+    paddingTop: spacing.s16,
+    paddingBottom: spacing.s48,
   },
   topHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: spacing.md,
+    marginBottom: spacing.s16,
   },
   logoRow: {
     flexDirection: "row",
@@ -274,33 +319,35 @@ const styles = StyleSheet.create({
   logoIcon: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: spacing.radiusSm,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: spacing.sm,
+    marginRight: spacing.s8,
   },
   brandTitle: {
-    color: colors.slate900,
+    color: colors.textPrimary,
   },
   demoTag: {
-    backgroundColor: colors.slate200,
-    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.surfaceNeutral,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: spacing.s8,
     paddingVertical: 3,
     borderRadius: spacing.radiusSm,
   },
   demoTagText: {
-    color: colors.slate700,
+    color: colors.textSecondary,
     fontWeight: "700",
   },
   heroCard: {
-    backgroundColor: colors.white,
-    borderRadius: spacing.radiusLg,
+    backgroundColor: colors.surface,
+    borderRadius: spacing.radiusCard,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    padding: spacing.xl,
-    marginBottom: spacing.xl,
-    shadowColor: colors.slate900,
+    padding: spacing.s24,
+    marginBottom: spacing.s24,
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 10,
@@ -310,11 +357,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.s10,
     paddingVertical: 4,
     borderRadius: spacing.radiusFull,
     alignSelf: "flex-start",
-    marginBottom: spacing.md,
+    marginBottom: spacing.s12,
     gap: 4,
   },
   heroPillText: {
@@ -322,158 +369,205 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   heroHeading: {
-    color: colors.slate900,
-    marginBottom: spacing.sm,
+    color: colors.textPrimary,
+    marginBottom: spacing.s12,
   },
   heroSub: {
-    color: colors.slate600,
-    marginBottom: spacing.lg,
-  },
-  boldText: {
-    fontWeight: "700",
-    color: colors.slate900,
+    color: colors.textSecondary,
+    marginBottom: spacing.s16,
+    lineHeight: 24,
   },
   estimatorBox: {
-    backgroundColor: colors.slate50,
-    borderRadius: spacing.radiusMd,
-    padding: spacing.md,
+    backgroundColor: colors.surfaceNeutral,
+    borderRadius: spacing.radiusInput,
+    padding: spacing.s16,
     borderWidth: 1,
-    borderColor: colors.slate200,
-    marginBottom: spacing.lg,
+    borderColor: colors.cardBorder,
+    marginBottom: spacing.s20,
   },
-  estimatorLabel: {
-    color: colors.slate500,
-    marginBottom: spacing.xs,
-  },
-  reachResultRow: {
+  estimatorTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: spacing.md,
+    marginBottom: spacing.s8,
+    flexWrap: "wrap",
+    gap: 4,
   },
-  dollarAmount: {
-    color: colors.slate900,
+  estimatorLabel: {
+    color: colors.textSecondary,
+    fontWeight: "600",
   },
-  peopleCountWrap: {
-    alignItems: "flex-end",
+  guaranteeTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.amberLight,
+    paddingHorizontal: spacing.s8,
+    paddingVertical: 2,
+    borderRadius: spacing.radiusFull,
   },
-  peopleCount: {
+  guaranteeTagText: {
+    color: colors.amberDark,
+    fontWeight: "700",
+  },
+  reachResultRow: {
+    marginBottom: spacing.s12,
+  },
+  illustrativeLine: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    lineHeight: 26,
+  },
+  reachHighlight: {
     color: colors.primary,
-  },
-  peopleUnit: {
-    color: colors.slate500,
+    fontWeight: "700",
   },
   presetsRow: {
     flexDirection: "row",
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
+    gap: spacing.s8,
+    marginBottom: spacing.s8,
   },
   presetBtn: {
     flex: 1,
-    paddingVertical: 7,
+    paddingVertical: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderRadius: spacing.radiusSm,
     borderWidth: 1,
-    borderColor: colors.slate300,
+    borderColor: colors.cardBorder,
+    minHeight: 38,
   },
   presetBtnActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   presetBtnText: {
-    color: colors.slate700,
+    color: colors.textSecondary,
     fontWeight: "600",
   },
   presetBtnTextActive: {
     color: colors.white,
   },
   estimatorDisclaimer: {
-    color: colors.slate400,
+    color: colors.textMuted,
+    lineHeight: 16,
     marginTop: 4,
   },
   heroButtonsRow: {
     flexDirection: "row",
-    gap: spacing.md,
+    gap: spacing.s12,
   },
   primaryHeroBtn: {
     flex: 1,
     backgroundColor: colors.primary,
-    paddingVertical: 13,
-    borderRadius: spacing.radiusMd,
+    paddingVertical: spacing.s12,
+    borderRadius: spacing.radiusInput,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: spacing.minTouchTarget,
   },
   primaryHeroBtnText: {
     color: colors.white,
   },
   secondaryHeroBtn: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.slate300,
-    paddingVertical: 13,
-    borderRadius: spacing.radiusMd,
+    paddingVertical: spacing.s12,
+    borderRadius: spacing.radiusInput,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: spacing.minTouchTarget,
   },
   secondaryHeroBtnText: {
-    color: colors.slate800,
+    color: colors.textPrimary,
+  },
+  howItWorksSection: {
+    marginBottom: spacing.s24,
   },
   sectionHeader: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.s12,
+  },
+  howBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: spacing.s4,
+  },
+  howBadgeText: {
+    color: colors.primary,
+    fontWeight: "700",
   },
   sectionTitle: {
-    color: colors.slate900,
+    color: colors.textPrimary,
   },
   sectionSubtitle: {
-    color: colors.slate500,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   howItWorksCard: {
-    backgroundColor: colors.white,
-    borderRadius: spacing.radiusLg,
+    backgroundColor: colors.surface,
+    borderRadius: spacing.radiusCard,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
+    padding: spacing.s20,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
   },
   stepRow: {
     flexDirection: "row",
     alignItems: "flex-start",
   },
   stepNumberBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: spacing.md,
-  },
-  stepNumberText: {
-    fontWeight: "800",
-    fontSize: 14,
+    marginRight: spacing.s16,
   },
   stepInfo: {
     flex: 1,
   },
+  stepTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.s8,
+    marginBottom: spacing.s4,
+  },
+  stepNumberLabel: {
+    color: colors.textMuted,
+    fontWeight: "700",
+  },
   stepTitle: {
-    color: colors.slate900,
-    marginBottom: 2,
+    color: colors.textPrimary,
   },
   stepDesc: {
-    color: colors.slate600,
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
   },
-  stepDivider: {
-    height: 1,
-    backgroundColor: colors.slate100,
-    marginVertical: spacing.md,
-    marginLeft: 42,
+  stepConnector: {
+    width: 2,
+    height: 20,
+    backgroundColor: colors.cardBorder,
+    marginLeft: 17,
+    marginVertical: 4,
   },
   feedHeaderRow: {
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    marginBottom: spacing.md,
+    marginBottom: spacing.s16,
   },
   seeAllText: {
     color: colors.primary,
@@ -481,18 +575,29 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: "center",
-    marginTop: spacing.xl,
-    paddingVertical: spacing.lg,
+    marginTop: spacing.s24,
+    paddingVertical: spacing.s20,
     borderTopWidth: 1,
-    borderTopColor: colors.slate200,
+    borderTopColor: colors.cardBorder,
+    gap: 4,
+  },
+  footerTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 2,
+  },
+  footerDemoNotice: {
+    color: colors.textMuted,
+    fontWeight: "700",
   },
   footerText: {
-    color: colors.slate500,
+    color: colors.textSecondary,
     textAlign: "center",
   },
   footerSub: {
-    color: colors.slate400,
+    color: colors.textMuted,
     textAlign: "center",
-    marginTop: 4,
+    marginTop: 2,
   },
 });

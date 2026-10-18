@@ -16,6 +16,8 @@ export const colors = {
   background: "#FBFBFA", // Warm off-white newsprint feel
   surface: "#FFFFFF", // Card surface
   surfaceElevated: "#FFFFFF",
+  surfaceNeutral: "#F8FAFC", // Subtle tinted container surface
+  surfaceGlass: "rgba(255, 255, 255, 0.88)",
   border: "#E5E7EB", // Subtle crisp divider
   borderLight: "#F3F4F6",
   cardBorder: "#E2E8F0",
