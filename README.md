@@ -11,96 +11,18 @@
 
 ---
 
-## 1. Demo Video
-
-Walk through your complete assignment, demonstrating the key features and user flows.
-
-> 🎥 **Walkthrough Video Link:**  
-> **[Watch the Complete End-to-End Demo Video on Google Drive / Loom](https://drive.google.com/file/d/your-demo-video-link/view)**  
-> *(Direct video presentation demonstrating the complete assignment, architecture, and live application flows)*
-
-### 🎬 Guided Video Walkthrough Breakdown & User Flows:
-
-| Timestamp | User Flow / Feature Demonstrated | Key Verification Points |
-| :--- | :--- | :--- |
-| **00:00 – 01:15** | **Platform Introduction & Anti-Donation Philosophy** | • Visual demonstration of the high-trust editorial design system (Georgia serif + Slate Navy).<br/>• Clear explanation that contributions fund **advertising distribution and reach**, not the cause or creator directly.<br/>• Zero instances of the words *"donate"* or *"donation"* in UI text. |
-| **01:15 – 02:45** | **Home & Algorithmic Reach Modeler** | • Live interaction with the Reach Estimator (`$10 could reach about 840–1,560 people` based on pure config model).<br/>• Prominent disclaimer: *“Estimate, not a guarantee”*.<br/>• Horizontal `FeaturedCarousel`, 3-step *Create ➔ Review ➔ Amplify* card, and active campaign feed. |
-| **02:45 – 04:15** | **Explore & Discovery** | • 300ms debounced search bar filtering title, creator, or topic.<br/>• 10 category chips (*Environment, Health, Science, Education, Public Policy, etc.*).<br/>• 4-way sort control (*Most funded, Ending soon, Newest, Closest to goal*).<br/>• `FilterBottomSheet` with category, status, and minimum progress thresholds. |
-| **04:15 – 06:15** | **Campaign Detail Editorial Reading Experience** | • Editorial story rendered via `StoryRenderer` (headings, body, stat callouts, captioned photography).<br/>• **Primary Citations section:** Clickable outbound links (EPA, State Health records) open in browser.<br/>• Accordions: Transparent Fee Breakdown (5% platform fee), Audience Targeting, Review & Trust.<br/>• Sticky bottom bar with % funded and non-obstructive *"Back This Campaign"* button. |
-| **06:15 – 08:30** | **Trust-Optimized Backing Flow (Phase 4)** | • 5-step stack: Choose preset (`$5`–`$100`) or custom contribution amount with live reach updates.<br/>• Review screen itemizing net contribution, 5% platform fee, card processing (`2.9% + $0.30`), and total.<br/>• **Mandatory acknowledgment checkbox:** *“Your contribution pays for promoting this message. It is not a donation to the cause.”*<br/>• Simulated checkout with guest mode (optional receipt email) and private backer attribution toggle.<br/>• Test cards demonstration: `4242` (Success), `0002` (Card Declined with retry), `0001` (Pending authorization).<br/>• Confirmation screen with viewable official receipt modal, share trigger, and follow link. |
-| **08:30 – 11:30** | **5-Step Creator Studio with Voice / AI Entry (Phase 5)** | • Entry screen with "Create Manually" and "Create with Your Voice" cards.<br/>• Voice assistant demo with canned transcript generating an editable draft with the top banner: *“Draft generated from your description. Please review and edit.”*<br/>• **Step 1 (Basics):** Live ≤60 character title counter, category, creator type.<br/>• **Step 2 (Story & Sources):** Up/Down block reordering, formatting toolbar (`B`, `I`, `Link`), source URL validation, and live `StoryRenderer` reader preview.<br/>• **Step 3 (Visuals):** Multi-placement ad creative previews (*Feed Post*, *Story / Vertical*, *Billboard Banner*).<br/>• **Step 4 (Reach):** Audience reach choices separated from reviewer auction bidding parameters.<br/>• **Step 5 (Submit):** **Funding goal starts strictly empty** requiring manual entry ($3,500), followed by 6-stage lifecycle submission timeline. |
-| **11:30 – 13:00** | **Creator Dashboard & Telemetry Analytics (Phase 6)** | • 6 lifecycle tabs (*Published / Funding*, *Promoting*, *Under Review*, *Completed*, *Drafts*, *Requires Action*).<br/>• Moderation feedback notes modal for campaigns requiring revisions.<br/>• **Campaign Analytics Modal:** Strictly separates **Estimated Reach (Pre-Launch Projection)** from **Measured Delivery (Live Verified Ad Servers)**. |
-| **13:00 – 14:15** | **Activity, Profile & Reviewer Mode Demo (Phases 6 & 7)** | • Activity notifications grouped into *Today* and *Earlier* with unread indicators and followed campaign progress bars.<br/>• Profile tab with guest state vs authenticated sign-in modal, backed receipts, and saved campaigns.<br/>• **Reviewer Mode Switch:** Demo toggle in Settings to claim and approve campaigns in review. |
-| **14:15 – 15:00** | **Secondary Pages & Accessibility (Phase 7)** | • Reusable `/info/[page]` routes: About, How It Works, FAQs (collapsible accordions), Help, Terms, Guidelines.<br/>• Verified accessibility: all touch targets ≥48px, high-contrast WCAG AA palette, responsive layout on 360px and 430px screens. |
-
----
-
-## 2. App Build
-
-- **APK :** Submit the Android application build.
-  - **Android APK Direct Download:** [Download Amplify Together APK (Release Build v1.0.0)](https://github.com/harsh7675879590/Amplify-Together/releases/download/v1.0.0/amplify-together-release.apk)
-  - **Cloud Build via Expo Application Services (EAS):**
-    ```bash
-    cd mobile
-    # Install EAS CLI globally if not present
-    npm install -g eas-cli
-    
-    # Trigger Android Preview / Release APK build in the cloud
-    eas build --platform android --profile preview
-    ```
-  - **Local Standalone Build (Gradle / Android Studio):**
-    ```bash
-    cd mobile
-    # Prebuild native Android project & compile release APK
-    npx expo run:android --variant release
-    ```
-  - **Installing on Android Device via ADB:**
-    ```bash
-    adb install -r android/app/build/outputs/apk/release/app-release.apk
-    ```
-
-- **TestFlight :** If possible, prepare and share an iOS TestFlight build.
-  - **iOS TestFlight Public Beta Link:** [Join Amplify Together on Apple TestFlight](https://testflight.apple.com/join/amplify-together)
-  - **Cloud Build via EAS:**
-    ```bash
-    cd mobile
-    # Trigger iOS TestFlight build on Expo Cloud
-    eas build --platform ios --profile preview
-    ```
-  - **Local iOS Simulator Build:**
-    ```bash
-    cd mobile
-    # Launch release binary in macOS iOS Simulator
-    npx expo run:ios --configuration Release
-    ```
-
-- **Instant Web SPA Evaluation (Recommended for Immediate Evaluation):**
-  - Evaluators can test all screens and user flows instantly in any desktop or mobile browser (responsive design tested and verified on 360px and 430px viewports):
-    ```bash
-    cd mobile
-    npm install
-    npm run web
-    ```
-  - App opens live at `http://localhost:8081`.
-  - Component library preview: `http://localhost:8081/design-preview`.
-
-- **Expo Go (Direct Device Testing via QR Code):**
-  - Run `npx expo start` in `mobile/` and scan the terminal QR code with the **Expo Go** app on iOS Camera or Android Expo Go.
-
 ## 📑 Table of Contents
-1. [1. Demo Video](#1-demo-video)
-2. [2. App Build](#2-app-build)
-3. [Executive Overview](#-executive-overview)
-4. [System Architecture Diagram](#-system-architecture-diagram)
-5. [Campaign Lifecycle State Machine](#-campaign-lifecycle-state-machine)
-6. [Contribution & Payment Settlement Flow](#-contribution--payment-settlement-flow)
-7. [5-Step Creator Wizard Flow](#-5-step-creator-wizard-flow)
-8. [Editorial Design System & Tokens](#-editorial-design-system--tokens)
-9. [Mathematical Models: Fees & Algorithmic Reach](#-mathematical-models-fees--algorithmic-reach)
-10. [Codebase Organization & Directory Structure](#-codebase-organization--directory-structure)
-11. [Quick Start & Local Development](#-quick-start--local-development)
-12. [Frontend Architecture & Setup](#-frontend-architecture--setup)
-13. [Hackathon Judging Walkthrough & Golden Path](#-hackathon-judging-walkthrough--golden-path)
+1. [Executive Overview](#-executive-overview)
+2. [System Architecture Diagram](#-system-architecture-diagram)
+3. [Campaign Lifecycle State Machine](#-campaign-lifecycle-state-machine)
+4. [Contribution & Payment Settlement Flow](#-contribution--payment-settlement-flow)
+5. [5-Step Creator Wizard Flow](#-5-step-creator-wizard-flow)
+6. [Editorial Design System & Tokens](#-editorial-design-system--tokens)
+7. [Mathematical Models: Fees & Algorithmic Reach](#-mathematical-models-fees--algorithmic-reach)
+8. [Codebase Organization & Directory Structure](#-codebase-organization--directory-structure)
+9. [Quick Start & Local Development](#-quick-start--local-development)
+10. [Frontend Architecture & Setup](#-frontend-architecture--setup)
+11. [Hackathon Judging Walkthrough & Golden Path](#-hackathon-judging-walkthrough--golden-path)
 
 ---
 
@@ -418,8 +340,6 @@ Amplify Together/
 │   │   ├── campaign/[id].tsx      # Editorial Story Detail: Blocks, sources, sticky bar
 │   │   ├── back/[id].tsx          # Backing Flow: Amount presets, fee quote, test cards
 │   │   ├── create/step.tsx        # 5-Step Campaign Creation Wizard
-│   │   ├── dashboard.tsx          # Creator Dashboard: 6 lifecycle tabs & telemetry modal
-│   │   ├── info/[page].tsx        # Secondary Informational & Policy Pages (About, FAQ, Help, etc.)
 │   │   ├── report/[id].tsx        # Post-Campaign Audited Distribution Report
 │   │   ├── design-preview.tsx     # Dev-only Design System component preview route
 │   │   ├── _layout.tsx            # Root Stack & global theme wrapper
@@ -435,8 +355,6 @@ Amplify Together/
 │   │   ├── ProgressBar.tsx        # Animated funding progress indicator
 │   │   ├── StatusBadge.tsx        # Semantic lifecycle status badges
 │   │   ├── CampaignCard.tsx       # Feed (editorial cover) & Compact list variants
-│   │   ├── FeaturedCarousel.tsx   # Horizontal featured campaigns hero carousel
-│   │   ├── FilterBottomSheet.tsx  # Multi-parameter bottom sheet filter modal
 │   │   ├── Accordion.tsx          # Collapsible disclosures for fees & sources
 │   │   ├── StepIndicator.tsx      # 5-step visual wizard progress header
 │   │   ├── SkeletonCard.tsx       # Shimmer loading placeholder
