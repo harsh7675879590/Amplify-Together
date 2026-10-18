@@ -89,8 +89,9 @@ export default function CampaignReportScreen() {
           <Text style={[styles.campaignLabel, typography.micro]}>COMPLETED CAMPAIGN</Text>
           <Text style={[styles.campaignTitle, typography.h1]}>{report.campaign_title}</Text>
           <Text style={[styles.reportDate, typography.caption]}>
-            Report generated on {new Date(report.created_at).toLocaleDateString()}
+            Report generated on {new Date(report.created_at || Date.now()).toLocaleDateString()}
           </Text>
+
         </View>
 
         {/* Critical Evaluation Area: Estimated vs Measured Reach */}

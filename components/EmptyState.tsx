@@ -8,7 +8,8 @@ import { spacing } from "../theme/spacing";
 interface EmptyStateProps {
   icon?: keyof typeof Ionicons.glyphMap;
   title: string;
-  message: string;
+  message?: string;
+  description?: string;
   actionLabel?: string;
   onAction?: () => void;
 }
@@ -17,16 +18,21 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   icon = "search-outline",
   title,
   message,
+  description,
   actionLabel,
   onAction,
 }) => {
+  const displayText = message || description || "";
   return (
     <View style={styles.container}>
       <View style={styles.iconCircle}>
         <Ionicons name={icon} size={32} color={colors.primary} />
       </View>
       <Text style={[styles.title, typography.h2]}>{title}</Text>
-      <Text style={[styles.message, typography.body]}>{message}</Text>
+      {displayText ? (
+        <Text style={[styles.message, typography.body]}>{displayText}</Text>
+      ) : null}
+
       {actionLabel && onAction && (
         <TouchableOpacity style={styles.button} onPress={onAction} activeOpacity={0.8}>
           <Text style={[styles.buttonText, typography.h3]}>{actionLabel}</Text>

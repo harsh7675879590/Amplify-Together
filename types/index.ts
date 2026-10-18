@@ -65,6 +65,13 @@ export interface FeeCalculation {
   disclaimer: string;
 }
 
+export interface ReachSettings {
+  locations?: string[];
+  interests?: string[];
+  channels?: string[];
+  duration_days?: number;
+}
+
 export interface Campaign {
   id: string;
   creatorId?: string;
@@ -81,13 +88,13 @@ export interface Campaign {
   story: StoryBlock[];
   status: CampaignStatus;
   fundingGoal: number;
-  funding_goal?: number;
+  funding_goal: number;
   amountRaised: number;
-  amount_raised?: number;
+  amount_raised: number;
   percentFunded: number;
-  percent_funded?: number;
+  percent_funded: number;
   estimatedReachMid: number;
-  estimated_reach_mid?: number;
+  estimated_reach_mid: number;
   estimatedReachRange: string;
   estimated_reach_range?: string;
   deadline?: string;
@@ -99,6 +106,7 @@ export interface Campaign {
   cta_text?: string;
   adImageUrl?: string;
   ad_image_url?: string;
+  reach_settings?: ReachSettings;
   targetLocations?: string[];
   targetInterests?: string[];
   targetChannels?: string[];
@@ -121,9 +129,9 @@ export interface Contribution {
   campaign_title?: string;
   amount: number;
   platformFee: number;
-  platform_fee?: number;
+  platform_fee: number;
   processingFee: number;
-  processing_fee?: number;
+  processing_fee: number;
   total: number;
   status: "pending" | "succeeded" | "failed" | "cancelled" | "refunded";
   isPublic: boolean;
@@ -131,7 +139,7 @@ export interface Contribution {
   displayName?: string;
   display_name?: string;
   reachEstimateMid: number;
-  reach_estimate_mid?: number;
+  reach_estimate_mid: number;
   createdAt: string;
   created_at?: string;
   message?: string;
@@ -214,24 +222,25 @@ export interface NotificationItem {
 export interface CampaignReport {
   id: string;
   campaignId: string;
-  campaign_id?: string;
+  campaign_id: string;
   campaignTitle: string;
-  campaign_title?: string;
+  campaign_title: string;
   fundsRaised: number;
-  funds_raised?: number;
+  funds_raised: number;
   adSpend: number;
-  ad_spend?: number;
+  ad_spend: number;
   impressions: number;
   clicks: number;
   estimatedReach: number;
-  estimated_reach?: number;
+  estimated_reach: number;
   measuredReach: number;
-  measured_reach?: number;
+  measured_reach: number;
   ctr: number;
   cpm: number;
   channelBreakdown: Record<string, number>;
-  channel_breakdown?: Record<string, number>;
+  channel_breakdown: Record<string, number>;
   createdAt: string;
-  created_at?: string;
+  created_at: string;
 }
+
 

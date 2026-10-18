@@ -7,8 +7,10 @@ export const colors = {
   accent: "#D97706", // Warm amber (used sparingly for primary CTAs)
   accentHover: "#B45309",
   accentLight: "#FEF3C7", // Soft warm gold
+  amber: "#D97706",
   amberDark: "#B45309",
   amberLight: "#FEF3C7",
+
 
   // Surface & Canvas
   background: "#FBFBFA", // Warm off-white newsprint feel

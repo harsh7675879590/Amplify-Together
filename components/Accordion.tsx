@@ -10,6 +10,7 @@ interface AccordionProps {
   iconName?: keyof typeof Ionicons.glyphMap;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  initialExpanded?: boolean;
 }
 
 export const Accordion: React.FC<AccordionProps> = ({
@@ -17,8 +18,10 @@ export const Accordion: React.FC<AccordionProps> = ({
   iconName,
   children,
   defaultOpen = false,
+  initialExpanded = false,
 }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [isOpen, setIsOpen] = useState(defaultOpen || initialExpanded);
+
 
   return (
     <View style={styles.container}>

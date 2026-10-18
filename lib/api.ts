@@ -184,6 +184,22 @@ export const api = {
     return item;
   },
 
+  async getCampaignDetail(id: string): Promise<Campaign> {
+    return this.getCampaignById(id);
+  },
+
+  async submitFeedback(
+    campaignId: string,
+    feedback: { rating?: number; comment?: string; agreeWithEvidence?: boolean }
+  ): Promise<{ success: boolean; message: string }> {
+    await delay(200);
+    return {
+      success: true,
+      message: "Thank you for verifying the campaign evidence and supporting citations.",
+    };
+  },
+
+
   async getQuote(campaignId: string, amount: number): Promise<ContributionQuote> {
     const fees = calculateFees(amount);
     const reach = estimateReach(fees.availableForAds);
@@ -378,27 +394,42 @@ export const api = {
       title: d.title,
       category: d.category || "Environment",
       creatorName: d.creatorName || "Anonymous Creator",
+      creator_name: d.creatorName || "Anonymous Creator",
       creatorType: d.creatorType || "individual",
+      creator_type: d.creatorType || "individual",
       summary: d.summary || "",
       coverImageUrl: d.coverImageUrl || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800",
+      cover_image_url: d.coverImageUrl || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800",
       story: d.story || [],
       status: "submitted",
       fundingGoal: d.fundingGoal,
+      funding_goal: d.fundingGoal,
       amountRaised: 0,
+      amount_raised: 0,
       percentFunded: 0,
+      percent_funded: 0,
       estimatedReachMid: estimateReach(d.fundingGoal * 0.95).mid,
+      estimated_reach_mid: estimateReach(d.fundingGoal * 0.95).mid,
       estimatedReachRange: estimateReach(d.fundingGoal * 0.95).formattedRange,
+      estimated_reach_range: estimateReach(d.fundingGoal * 0.95).formattedRange,
       adHeadline: d.adHeadline || d.title,
+      ad_headline: d.adHeadline || d.title,
       adDescription: d.adDescription || d.summary,
+      ad_description: d.adDescription || d.summary,
       ctaText: d.ctaText || "Learn More",
+      cta_text: d.ctaText || "Learn More",
       adImageUrl: d.adImageUrl || d.coverImageUrl,
+      ad_image_url: d.adImageUrl || d.coverImageUrl,
       targetLocations: d.targetLocations || ["National"],
       targetInterests: d.targetInterests || [],
       targetChannels: d.targetChannels || ["Social Media Feeds"],
       durationDays: d.durationDays || 30,
+      duration_days: d.durationDays || 30,
       sources: d.sources || [],
       createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
       submittedAt: new Date().toISOString(),
+      submitted_at: new Date().toISOString(),
     };
 
     mockCampaigns.unshift(newCamp);
@@ -453,13 +484,19 @@ export const api = {
     return {
       id: `rep-${campaignId}`,
       campaignId,
+      campaign_id: campaignId,
       campaignTitle: campaign?.title || "Campaign Message",
+      campaign_title: campaign?.title || "Campaign Message",
       fundsRaised,
+      funds_raised: fundsRaised,
       adSpend,
+      ad_spend: adSpend,
       impressions,
       clicks,
       estimatedReach,
+      estimated_reach: estimatedReach,
       measuredReach,
+      measured_reach: measuredReach,
       ctr: 2.4,
       cpm: 4.16,
       channelBreakdown: {
@@ -467,7 +504,13 @@ export const api = {
         "Independent News Placements": 25,
         "Targeted Search Keyword Placements": 15,
       },
+      channel_breakdown: {
+        "Social Feeds (Meta/Instagram/X)": 60,
+        "Independent News Placements": 25,
+        "Targeted Search Keyword Placements": 15,
+      },
       createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     };
   },
 };

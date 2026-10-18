@@ -1,7 +1,19 @@
 import { Campaign, CampaignReport } from "../types";
 import { estimateReach } from "../lib/reach";
 
-function createCampaignWithReach(c: Omit<Campaign, "percentFunded" | "estimatedReachMid" | "estimatedReachRange">): Campaign {
+function createCampaignWithReach(
+  c: Omit<
+    Campaign,
+    | "percentFunded"
+    | "estimatedReachMid"
+    | "estimatedReachRange"
+    | "funding_goal"
+    | "amount_raised"
+    | "percent_funded"
+    | "estimated_reach_mid"
+  >
+): Campaign {
+
   const percentFunded = c.fundingGoal > 0 ? Math.round((c.amountRaised / c.fundingGoal) * 100) : 0;
   // 95% of raised amount is available for ads (after 5% platform fee)
   const adDollars = c.amountRaised * 0.95;
@@ -486,13 +498,19 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
 export const MOCK_REPORT_SOLAR: CampaignReport = {
   id: "rep-camp-10-solar",
   campaignId: "camp-10-solar",
+  campaign_id: "camp-10-solar",
   campaignTitle: "End punitive utility fees on rooftop solar",
+  campaign_title: "End punitive utility fees on rooftop solar",
   fundsRaised: 3000,
+  funds_raised: 3000,
   adSpend: 2850, // 95% after 5% platform fee
+  ad_spend: 2850,
   impressions: 684200,
   clicks: 18940,
   estimatedReach: 342000,
+  estimated_reach: 342000,
   measuredReach: 371800, // +8.7% above estimate
+  measured_reach: 371800,
   ctr: 2.76,
   cpm: 4.16,
   channelBreakdown: {
@@ -500,5 +518,12 @@ export const MOCK_REPORT_SOLAR: CampaignReport = {
     "Independent Journalism & Local News": 27,
     "Targeted Search Keyword Placements": 15,
   },
+  channel_breakdown: {
+    "Meta / Instagram Social Feeds": 58,
+    "Independent Journalism & Local News": 27,
+    "Targeted Search Keyword Placements": 15,
+  },
   createdAt: "2025-03-02T10:00:00Z",
+  created_at: "2025-03-02T10:00:00Z",
 };
+
