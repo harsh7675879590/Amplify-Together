@@ -1,68 +1,80 @@
-import { SymbolView } from 'expo-symbols';
-import { Link, Tabs } from 'expo-router';
-import { Platform, Pressable } from 'react-native';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import React from "react";
+import { Tabs } from "expo-router";
+import { Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../../theme/colors";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.slate400,
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: colors.white,
+          borderTopColor: colors.slate200,
+          borderTopWidth: 1,
+          height: Platform.OS === "ios" ? 88 : 64,
+          paddingBottom: Platform.OS === "ios" ? 28 : 10,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable style={{ marginRight: 15 }}>
-                {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: 'info.circle', android: 'info', web: 'info' }}
-                    size={25}
-                    tintColor={Colors[colorScheme].text}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
+          title: "Home",
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={22} color={focused ? colors.primary : colors.slate400} />
           ),
         }}
       />
       <Tabs.Screen
+        name="explore"
+        options={{
+          title: "Explore",
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name={focused ? "compass" : "compass-outline"} size={22} color={focused ? colors.primary : colors.slate400} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="create"
+        options={{
+          title: "Create",
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name={focused ? "add-circle" : "add-circle-outline"} size={24} color={focused ? colors.primary : colors.slate400} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="activity"
+        options={{
+          title: "Activity",
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name={focused ? "notifications" : "notifications-outline"} size={22} color={focused ? colors.primary : colors.slate400} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={22} color={focused ? colors.primary : colors.slate400} />
+          ),
+        }}
+      />
+      {/* Hide default tab two */}
+      <Tabs.Screen
         name="two"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
+          href: null,
         }}
       />
     </Tabs>
