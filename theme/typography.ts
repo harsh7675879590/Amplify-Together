@@ -89,4 +89,44 @@ export const typography = {
     fontWeight: "600" as TextStyle["fontWeight"],
     letterSpacing: 0.4,
   },
+
+  // Aliases for layout compatibility
+  h1: {
+    fontFamily: serifFont,
+    fontSize: 22,
+    lineHeight: 30,
+    fontWeight: "700" as TextStyle["fontWeight"],
+  },
+  h2: {
+    fontFamily: serifFont,
+    fontSize: 18,
+    lineHeight: 26,
+    fontWeight: "700" as TextStyle["fontWeight"],
+  },
+  h3: {
+    fontFamily: sansFont,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: "600" as TextStyle["fontWeight"],
+  },
+  body: {
+    fontFamily: serifFont,
+    fontSize: 16,
+    lineHeight: 26,
+    fontWeight: "400" as TextStyle["fontWeight"],
+  },
+  caption: {
+    fontFamily: sansFont,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "500" as TextStyle["fontWeight"],
+  },
+  micro: {
+    fontFamily: sansFont,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "600" as TextStyle["fontWeight"],
+    letterSpacing: 0.4,
+  },
 };
+

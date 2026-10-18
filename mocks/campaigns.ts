@@ -9,9 +9,22 @@ function createCampaignWithReach(c: Omit<Campaign, "percentFunded" | "estimatedR
 
   return {
     ...c,
+    creator_name: c.creatorName,
+    creator_type: c.creatorType,
+    cover_image_url: c.coverImageUrl,
+    funding_goal: c.fundingGoal,
+    amount_raised: c.amountRaised,
     percentFunded,
+    percent_funded: percentFunded,
     estimatedReachMid: reach.mid,
+    estimated_reach_mid: reach.mid,
     estimatedReachRange: reach.formattedRange,
+    estimated_reach_range: reach.formattedRange,
+    ad_headline: c.adHeadline,
+    ad_description: c.adDescription,
+    cta_text: c.ctaText,
+    ad_image_url: c.adImageUrl,
+    created_at: c.createdAt,
   };
 }
 
