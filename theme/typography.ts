@@ -91,6 +91,18 @@ export const typography = {
   },
 
   // Aliases for layout compatibility
+  hero: {
+    fontFamily: serifFont,
+    fontSize: 28,
+    lineHeight: 36,
+    fontWeight: "700" as TextStyle["fontWeight"],
+  },
+  bodyMedium: {
+    fontFamily: serifFont,
+    fontSize: 16,
+    lineHeight: 26,
+    fontWeight: "600" as TextStyle["fontWeight"],
+  },
   h1: {
     fontFamily: serifFont,
     fontSize: 22,

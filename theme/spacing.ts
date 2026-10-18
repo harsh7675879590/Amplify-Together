@@ -14,6 +14,7 @@ export const spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+  xxl: 32,
   huge: 48,
 
   // Semantic radius scale
