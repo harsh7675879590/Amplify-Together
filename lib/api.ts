@@ -21,12 +21,15 @@ let mockContributions: Contribution[] = [
     campaignTitle: "Clean drinking water in every public school",
     amount: 100,
     platformFee: 5,
+    platform_fee: 5,
     processingFee: 3.2,
+    processing_fee: 3.2,
     total: 103.2,
     status: "succeeded",
     isPublic: false,
     displayName: undefined,
     reachEstimateMid: 11400,
+    reach_estimate_mid: 11400,
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     message: "Simulated payment succeeded.",
   },
@@ -36,15 +39,19 @@ let mockContributions: Contribution[] = [
     campaignTitle: "Redraw the bus network around where people work",
     amount: 50,
     platformFee: 2.5,
+    platform_fee: 2.5,
     processingFee: 1.75,
+    processing_fee: 1.75,
     total: 51.75,
     status: "succeeded",
     isPublic: true,
     displayName: "Commuter for Clean Transit",
     reachEstimateMid: 5700,
+    reach_estimate_mid: 5700,
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     message: "Simulated payment succeeded.",
   },
+
 ];
 
 let mockNotifications: NotificationItem[] = [
@@ -184,19 +191,69 @@ export const api = {
     return item;
   },
 
+  async getCampaignById(id: string): Promise<Campaign> {
+    return this.getCampaign(id);
+  },
+
   async getCampaignDetail(id: string): Promise<Campaign> {
-    return this.getCampaignById(id);
+    return this.getCampaign(id);
   },
 
   async submitFeedback(
     campaignId: string,
-    feedback: { rating?: number; comment?: string; agreeWithEvidence?: boolean }
+    feedback: Record<string, any>
   ): Promise<{ success: boolean; message: string }> {
     await delay(200);
     return {
       success: true,
       message: "Thank you for verifying the campaign evidence and supporting citations.",
     };
+  },
+
+  async getReviewQueue(): Promise<Campaign[]> {
+    await delay(200);
+    return mockCampaigns.filter(
+      (c) => c.status === "submitted" || c.status === "changes_requested"
+    );
+  },
+
+  async approveCampaign(
+    id: string,
+    notes?: string
+  ): Promise<{ success: boolean; campaign: Campaign }> {
+    await delay(200);
+    const c = mockCampaigns.find((x) => x.id === id);
+    if (c) {
+      c.status = "available_for_funding";
+      c.approvedAt = new Date().toISOString();
+      c.approved_at = new Date().toISOString();
+    }
+    return { success: true, campaign: c! };
+  },
+
+  async advanceDemoStage(
+    id: string
+  ): Promise<Campaign & { old_status: string; new_status: string }> {
+    await delay(200);
+    const c = mockCampaigns.find((x) => x.id === id);
+    const oldStatus = c ? c.status : "submitted";
+    let newStatus = oldStatus;
+    if (c) {
+      const sequence: CampaignStatus[] = [
+        "submitted",
+        "available_for_funding",
+        "goal_reached",
+        "distribution_prep",
+        "promoting",
+        "completed",
+      ];
+      const currentIndex = sequence.indexOf(c.status);
+      if (currentIndex >= 0 && currentIndex < sequence.length - 1) {
+        c.status = sequence[currentIndex + 1];
+        newStatus = c.status;
+      }
+    }
+    return { ...(c as Campaign), old_status: oldStatus, new_status: newStatus };
   },
 
 
@@ -206,6 +263,17 @@ export const api = {
     return {
       ...fees,
       reachEstimate: reach,
+      reach_estimate: {
+        low: reach.low,
+        mid: reach.mid,
+        high: reach.high,
+        formatted_range: reach.formattedRange,
+      },
+      platform_fee: fees.platformFee,
+      processing_fee: fees.processingFee,
+      processing_fee_formula: fees.processingFeeFormula,
+      available_for_ads: fees.availableForAds,
+      total_charged: fees.totalCharged,
     };
   },
 
@@ -214,12 +282,14 @@ export const api = {
     data: {
       amount: number;
       guestEmail?: string;
+      guest_email?: string;
       isPublic?: boolean;
       displayName?: string;
       cardNumber?: string;
       action?: string;
     }
   ): Promise<Contribution> {
+
     if (USE_REAL_BACKEND) {
       const res = await fetch(`${API_BASE_URL}/campaigns/${campaignId}/contribute`, {
         method: "POST",
@@ -262,15 +332,22 @@ export const api = {
       campaignTitle: campaign.title,
       amount: fees.amount,
       platformFee: fees.platformFee,
+      platform_fee: fees.platformFee,
       processingFee: fees.processingFee,
+      processing_fee: fees.processingFee,
       total: fees.totalCharged,
       status,
       isPublic: Boolean(data.isPublic),
       displayName: data.isPublic ? data.displayName || "Public Backer" : undefined,
       reachEstimateMid: reach.mid,
+      reach_estimate_mid: reach.mid,
+      campaign_id: campaignId,
+      campaign_title: campaign.title,
       createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
       message,
     };
+
 
     mockContributions.unshift(newContrib);
 

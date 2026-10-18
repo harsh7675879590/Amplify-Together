@@ -147,13 +147,19 @@ export interface Contribution {
 
 export interface ContributionQuote extends FeeCalculation {
   reachEstimate: ReachEstimate;
-  reach_estimate?: {
+  reach_estimate: {
     low: number;
     mid: number;
     high: number;
     formatted_range: string;
   };
+  platform_fee: number;
+  processing_fee: number;
+  processing_fee_formula: string;
+  available_for_ads: number;
+  total_charged: number;
 }
+
 
 export interface DraftData {
   title?: string;

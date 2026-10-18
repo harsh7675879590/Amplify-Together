@@ -171,11 +171,12 @@ export default function ActivityScreen() {
                     <Text style={[styles.notifBody, typography.body]}>{item.body}</Text>
                     <View style={styles.cardFooter}>
                       <Text style={[styles.timeText, typography.micro]}>
-                        {new Date(item.created_at).toLocaleDateString(undefined, {
+                        {new Date(item.created_at || item.createdAt || Date.now()).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
                         })}
                       </Text>
+
                       {item.campaign_id && (
                         <Text style={[styles.viewLink, typography.micro]}>
                           View details ➔

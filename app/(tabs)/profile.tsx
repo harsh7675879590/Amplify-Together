@@ -36,8 +36,17 @@ export default function ProfileScreen() {
         api.getMyContributions().catch(() => []),
         api.getReviewQueue().catch(() => []),
       ]);
-      // Filter campaigns by demo creator Maya Lin
-      setCreatedCampaigns(allCamps.filter((c) => c.creator_name.includes("Maya") || c.creator_name.includes("Safe Schools") || c.creator_name.includes("Cascadia")));
+      setCreatedCampaigns(
+        allCamps.filter((c: any) => {
+          const name = c.creator_name || c.creatorName || "";
+          return (
+            name.includes("Maya") ||
+            name.includes("Safe Schools") ||
+            name.includes("Cascadia")
+          );
+        })
+      );
+
       setReviewQueue(queue);
       setBackedList(contribs);
     } catch (e) {

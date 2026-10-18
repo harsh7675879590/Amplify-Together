@@ -71,10 +71,11 @@ export default function BackCampaignScreen() {
       setIsProcessing(true);
       const res = await api.contribute(id, {
         amount: parseFloat(amount),
+        guestEmail: guestEmail.trim() || undefined,
         guest_email: guestEmail.trim() || undefined,
-        is_public: isPublic,
-        display_name: isPublic ? (displayName.trim() || "Public Backer") : undefined,
-        card_number: selectedCard,
+        isPublic: isPublic,
+        displayName: isPublic ? (displayName.trim() || "Public Backer") : undefined,
+        cardNumber: selectedCard,
         action: action,
       });
       setResult(res);
@@ -83,19 +84,26 @@ export default function BackCampaignScreen() {
       console.warn("Contribution failed", e);
       setResult({
         id: "err",
+        campaignId: id,
         campaign_id: id,
         amount: parseFloat(amount),
+        platformFee: 0,
         platform_fee: 0,
+        processingFee: 0,
         processing_fee: 0,
         total: parseFloat(amount),
         status: "failed",
+        isPublic: false,
         is_public: false,
+        reachEstimateMid: 0,
         reach_estimate_mid: 0,
+        createdAt: new Date().toISOString(),
         created_at: new Date().toISOString(),
         message: e.message || "Contribution rejected",
       });
       setStep("result");
-    } finally {
+    }
+ finally {
       setIsProcessing(false);
     }
   };
