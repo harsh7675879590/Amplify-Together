@@ -175,19 +175,19 @@ export const useDraftStore = create<DraftState>((set, get) => ({
         const d = draft.data || {};
         set({
           draftId: draft.id,
-          currentStep: draft.current_step || 1,
+          currentStep: draft.current_step || draft.currentStep || 1,
           title: d.title || "",
           category: d.category || "Environment",
-          creatorName: d.creator_name || "",
+          creatorName: d.creator_name || d.creatorName || "",
           summary: d.summary || "",
-          coverImageUrl: d.cover_image_url || "",
-          story: d.story && d.story.length > 0 ? d.story : get().story,
+          coverImageUrl: d.cover_image_url || d.coverImageUrl || "",
+          story: d.story && d.story.length > 0 ? (d.story as StoryBlock[]) : get().story,
           sources: d.sources && d.sources.length > 0 ? d.sources : [{ title: "", url: "" }],
-          adHeadline: d.ad_headline || "",
-          adDescription: d.ad_description || "",
-          ctaText: d.cta_text || "Learn More",
-          adImageUrl: d.ad_image_url || "",
-          fundingGoal: d.funding_goal ? String(d.funding_goal) : "",
+          adHeadline: d.ad_headline || d.adHeadline || "",
+          adDescription: d.ad_description || d.adDescription || "",
+          ctaText: d.cta_text || d.ctaText || "Learn More",
+          adImageUrl: d.ad_image_url || d.adImageUrl || "",
+          fundingGoal: d.funding_goal ? String(d.funding_goal) : d.fundingGoal ? String(d.fundingGoal) : "",
           lastSavedAt: "Loaded from cloud",
         });
       }
