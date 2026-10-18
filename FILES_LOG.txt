@@ -31,13 +31,36 @@ Tracking all files created, modified, or planned in the repository with paths an
    - Path: backend/app/routers/campaigns.py
    - Description: Updated FastAPI campaigns list endpoint to support closest_to_goal sort and min_progress query filter parameters.
 
-## Phase 3: Campaign Detail (Current Phase)
+## Phase 4: Back a Campaign (Current Phase)
 
-8. [UPDATE] mobile/lib/api.ts
-   - Path: mobile/lib/api.ts
-   - Description: Added submitFeedback, toggleSaveCampaign, isCampaignSaved, toggleFollowCreator, and isCreatorFollowed API adapter methods.
+10. [UPDATE] mobile/app/back/[id].tsx
+    - Path: mobile/app/back/[id].tsx
+    - Description: Multi-step backing flow with small step header: Choose Contribution ($5, $10, $25, $50, $100 + custom with validation), Review (platform/card fees, live reach, progress, and mandatory anti-donation acknowledgment checkbox), Checkout (simulated guest mode, test card selector 4242/0002/0001, private backer name toggle, cancel action), 4 distinct result states, and confirmation with viewable receipt, share action, and follow link to Activity.
 
-9. [UPDATE] mobile/app/campaign/[id].tsx
-   - Path: mobile/app/campaign/[id].tsx
-   - Description: Complete editorial reading experience with Georgia serif typography, inline StoryRenderer, visible supporting sources, funding & reach metrics, 3 transparent accordions (Use of Funds, Audience & Distribution, Review & Trust), dual feedback reaction polls ('Did visuals keep you reading?' and 'Did this change your mind?'), Save and Follow actions, StickyBottomBar with safe content padding, and multi-state status handling.
+## Phase 5: Campaign Creation
+
+11. [UPDATE] mobile/app/(tabs)/create.tsx
+    - Path: mobile/app/(tabs)/create.tsx
+    - Description: Entry screen with 'Create Manually', 'Create with Your Voice', and 'Resume draft' cards, plus editable AI draft banner upon voice generation.
+
+12. [UPDATE] mobile/app/create/step.tsx
+    - Path: mobile/app/create/step.tsx
+    - Description: 5-step guided wizard (Basics -> Story -> Visuals -> Reach -> Submit) with persistent StepIndicator, draft auto-save, live story preview with StoryRenderer, placement previews, and manually entered starting-empty funding goal.
+
+## Phase 6: Creator Dashboard, Activity, Profile
+
+13. [UPDATE] mobile/app/(tabs)/profile.tsx
+    - Path: mobile/app/(tabs)/profile.tsx
+    - Description: Profile tab featuring Creator Dashboard with lifecycle tabs, analytics modal, backed/saved campaigns, and Reviewer mode demo toggle.
+
+14. [UPDATE] mobile/app/(tabs)/activity.tsx
+    - Path: mobile/app/(tabs)/activity.tsx
+    - Description: Activity tab with notifications grouped by Today / Earlier, read/unread states, followed campaigns with progress, and category settings.
+
+## Phase 7: Secondary Pages, Polish, Accessibility
+
+15. [NEW] mobile/app/info/[page].tsx
+    - Path: mobile/app/info/[page].tsx
+    - Description: Reusable template for secondary information pages: About, How It Works, FAQs (with Accordion), Help, Contact, Terms, Privacy, Community Guidelines, and Partners.
+
 
