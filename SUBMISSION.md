@@ -27,9 +27,22 @@
 
 A complete, high-definition end-to-end video walkthrough has been recorded, capturing every core user flow and design interaction within the native mobile container (400×850 mobile viewport).
 
-### Video Artifact Locations
+### 🎬 Master MP4 Demo Video File
 
-The video captures are saved directly as full-motion recordings in the repository's artifacts directory:
+The complete submission demo video has been encoded into a standard H.264 MP4 file:
+
+- **File Name:** `demo_video.mp4`
+- **Location:** [demo_video.mp4](file:///c:/Users/harsh/OneDrive/Desktop/Amplify%20Together/demo_video.mp4) (Root directory of the project)
+- **Format:** H.264 / YUV420p (Compatible with all media players, VLC, QuickTime, YouTube, and mobile devices)
+- **Resolution:** 1920 × 958 (HD High-DPI Capture)
+- **Duration:** 1 minute 56 seconds (1,161 frames)
+- **File Size:** ~5.75 MB
+
+---
+
+### Video Artifact Locations (WebP Sessions)
+
+In addition to `demo_video.mp4`, full-motion recordings from each phase are saved directly in the artifacts directory:
 
 | Recording | Scope | Description |
 |---|---|---|
