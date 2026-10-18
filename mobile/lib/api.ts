@@ -84,6 +84,9 @@ let mockNotifications: NotificationItem[] = [
   },
 ];
 
+let mockSavedCampaignIds: string[] = ["camp-01-water"];
+let mockFollowedCreators: string[] = ["Safe Schools Coalition"];
+
 let mockDraft: Draft = {
   id: "draft-user-active",
   currentStep: 1,
@@ -225,17 +228,6 @@ export const api = {
 
   async getCampaignDetail(id: string): Promise<Campaign> {
     return this.getCampaign(id);
-  },
-
-  async submitFeedback(
-    campaignId: string,
-    feedback: Record<string, any>
-  ): Promise<{ success: boolean; message: string }> {
-    await delay(200);
-    return {
-      success: true,
-      message: "Thank you for verifying the campaign evidence and supporting citations.",
-    };
   },
 
   async getReviewQueue(): Promise<Campaign[]> {
@@ -617,5 +609,59 @@ export const api = {
       createdAt: new Date().toISOString(),
       created_at: new Date().toISOString(),
     };
+  },
+
+  async submitFeedback(
+    campaignId: string,
+    data: { visuals_compelling?: string; changed_mind?: string; feedback_text?: string }
+  ): Promise<{ status: string; message: string }> {
+    if (USE_REAL_BACKEND) {
+      const res = await fetch(`${API_BASE_URL}/campaigns/${campaignId}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          encouraged_to_continue: data.visuals_compelling,
+          changed_mind: data.changed_mind,
+          feedback_text: data.feedback_text,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to submit feedback");
+      return res.json();
+    }
+    await delay(200);
+    return {
+      status: "success",
+      message: "Thank you for your feedback! Your reaction helps evaluate message clarity and impact.",
+    };
+  },
+
+  toggleSaveCampaign(campaignId: string): boolean {
+    const idx = mockSavedCampaignIds.indexOf(campaignId);
+    if (idx >= 0) {
+      mockSavedCampaignIds.splice(idx, 1);
+      return false;
+    } else {
+      mockSavedCampaignIds.push(campaignId);
+      return true;
+    }
+  },
+
+  isCampaignSaved(campaignId: string): boolean {
+    return mockSavedCampaignIds.includes(campaignId);
+  },
+
+  toggleFollowCreator(creatorName: string): boolean {
+    const idx = mockFollowedCreators.indexOf(creatorName);
+    if (idx >= 0) {
+      mockFollowedCreators.splice(idx, 1);
+      return false;
+    } else {
+      mockFollowedCreators.push(creatorName);
+      return true;
+    }
+  },
+
+  isCreatorFollowed(creatorName: string): boolean {
+    return mockFollowedCreators.includes(creatorName);
   },
 };

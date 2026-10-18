@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,17 +7,22 @@ import {
   Image,
   TouchableOpacity,
   Linking,
-  ActivityIndicator,
   Share,
   SafeAreaView,
+  Alert,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Campaign } from "../../lib/types";
+import { Campaign } from "../../types";
 import { api } from "../../lib/api";
+import { estimateReach } from "../../lib/reach";
+import { StoryRenderer } from "../../components/StoryRenderer";
 import { ProgressBar } from "../../components/ProgressBar";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Accordion } from "../../components/Accordion";
+import { SkeletonCard } from "../../components/SkeletonCard";
+import { ErrorState } from "../../components/ErrorState";
 import { colors } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { spacing } from "../../theme/spacing";
@@ -28,328 +33,674 @@ export default function CampaignDetailScreen() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
-  const [feedbackSelected, setFeedbackSelected] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Engagement States
+  const [isSaved, setIsSaved] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [visualsFeedback, setVisualsFeedback] = useState<"No" | "Somewhat" | "Yes" | null>(null);
+  const [mindFeedback, setMindFeedback] = useState<"No" | "Somewhat" | "Yes" | null>(null);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
+  const fetchCampaign = async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      setErrorMessage(null);
+      const data = await api.getCampaignDetail(id);
+      setCampaign(data);
+      setIsSaved(api.isCampaignSaved(data.id));
+      setIsFollowing(api.isCreatorFollowed(data.creatorName || data.creator_name || ""));
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to load campaign";
+      console.warn("Failed to load campaign detail", e);
+      setErrorMessage(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (id) {
-      api
-        .getCampaignDetail(id)
-        .then((data) => setCampaign(data))
-        .catch((e) => console.warn("Failed to load campaign", e))
-        .finally(() => setLoading(false));
-    }
+    fetchCampaign();
   }, [id]);
 
   const handleShare = async () => {
     if (!campaign) return;
+    const shareUrl = typeof window !== "undefined" ? window.location.href : `https://amplifytogether.org/campaign/${campaign.id}`;
+    const shareMessage = `Help amplify this message: "${campaign.title}" — Community-funded ad distribution on Amplify Together.\n\n${shareUrl}`;
+
     try {
+      if (Platform.OS === "web" && typeof navigator !== "undefined" && !navigator.share) {
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(shareUrl);
+          Alert.alert("Link Copied", "Campaign link copied to your clipboard!");
+          return;
+        }
+      }
       await Share.share({
         title: campaign.title,
-        message: `Help amplify this important message: "${campaign.title}" - Community-funded ad distribution on Amplify Together`,
+        message: shareMessage,
+        url: shareUrl,
       });
     } catch (e) {
       console.warn("Share failed", e);
     }
   };
 
-  const handleFeedback = async (val: string) => {
+  const handleToggleSave = () => {
     if (!campaign) return;
-    setFeedbackSelected(val);
+    const nextSaved = api.toggleSaveCampaign(campaign.id);
+    setIsSaved(nextSaved);
+  };
+
+  const handleToggleFollow = () => {
+    if (!campaign) return;
+    const creator = campaign.creatorName || campaign.creator_name || "";
+    const nextFollow = api.toggleFollowCreator(creator);
+    setIsFollowing(nextFollow);
+  };
+
+  const handleFeedbackSubmit = async (
+    type: "visuals" | "mind",
+    val: "No" | "Somewhat" | "Yes"
+  ) => {
+    if (!campaign) return;
+
+    const nextVisuals = type === "visuals" ? val : visualsFeedback;
+    const nextMind = type === "mind" ? val : mindFeedback;
+
+    if (type === "visuals") setVisualsFeedback(val);
+    if (type === "mind") setMindFeedback(val);
+
     try {
-      await api.submitFeedback(campaign.id, { changed_mind: val });
+      await api.submitFeedback(campaign.id, {
+        visuals_compelling: nextVisuals || undefined,
+        changed_mind: nextMind || undefined,
+      });
+      setFeedbackSubmitted(true);
     } catch (e) {
-      console.warn("Feedback failed", e);
+      console.warn("Feedback submission error", e);
     }
   };
 
+  // Calculations
+  const fundingGoal = campaign?.fundingGoal || campaign?.funding_goal || 0;
+  const amountRaised = campaign?.amountRaised || campaign?.amount_raised || 0;
+  const percent = campaign?.percentFunded ?? campaign?.percent_funded ?? (
+    fundingGoal > 0 ? Math.round((amountRaised / fundingGoal) * 100) : 0
+  );
+
+  const creatorName = campaign?.creatorName || campaign?.creator_name || "Community Creator";
+  const creatorTypeLabel = useMemo(() => {
+    const t = campaign?.creatorType || campaign?.creator_type;
+    if (t === "nonprofit") return "Nonprofit Organization";
+    if (t === "community_group") return "Community Coalition";
+    if (t === "business") return "Independent Business";
+    return "Individual Creator";
+  }, [campaign]);
+
+  const daysRemaining = useMemo(() => {
+    if (!campaign?.deadline) return "14 days left";
+    const diff = new Date(campaign.deadline).getTime() - Date.now();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    if (days < 0) return "Campaign ended";
+    if (days === 0) return "Ends today";
+    return `${days} days left`;
+  }, [campaign?.deadline]);
+
+  const reach = useMemo(() => {
+    if (campaign?.estimatedReachRange || campaign?.estimated_reach_range) {
+      return {
+        formattedRange: campaign.estimatedReachRange || campaign.estimated_reach_range || "",
+        mid: campaign.estimatedReachMid || campaign.estimated_reach_mid || 0,
+      };
+    }
+    const computed = estimateReach(fundingGoal * 0.95);
+    return {
+      formattedRange: computed.formattedRange,
+      mid: computed.mid,
+    };
+  }, [campaign, fundingGoal]);
+
+  const publishDateFormatted = useMemo(() => {
+    const raw = campaign?.createdAt || campaign?.created_at;
+    if (!raw) return "Recently published";
+    try {
+      return new Date(raw).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return "Recently published";
+    }
+  }, [campaign]);
+
+  // Loading State
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.topBar}>
+            <TouchableOpacity style={styles.circleBtn} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.loadingPadding}>
+            <SkeletonCard />
+            <SkeletonCard />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
     );
   }
 
-  if (!campaign) {
+  // Error State
+  if (errorMessage || !campaign) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={[styles.errorText, typography.h2]}>Campaign not found</Text>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={[styles.backBtnText, typography.h3]}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.topBar}>
+            <TouchableOpacity style={styles.circleBtn} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.errorWrapper}>
+            <ErrorState
+              title="Campaign Not Found"
+              message={errorMessage || "The campaign message you are looking for is unavailable or may have been removed."}
+              onRetry={fetchCampaign}
+              retryLabel="Reload Campaign"
+            />
+          </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
-  const percent = campaign.funding_goal > 0
-    ? Math.round((campaign.amount_raised / campaign.funding_goal) * 100)
-    : 0;
+  // Determine Primary CTA depending on campaign status
+  const renderBottomCta = () => {
+    if (campaign.status === "completed") {
+      return (
+        <TouchableOpacity
+          style={[styles.bottomCtaBtn, styles.reportCtaBtn]}
+          onPress={() => router.push(`/report/${campaign.id}`)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="bar-chart-outline" size={18} color={colors.textPrimary} />
+          <Text style={[styles.bottomCtaText, typography.uiH3, { color: colors.textPrimary }]}>
+            View Distribution Report
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    if (campaign.status === "under_review" || campaign.status === "submitted") {
+      return (
+        <View style={[styles.bottomCtaBtn, styles.reviewCtaBtn]}>
+          <Ionicons name="shield-outline" size={18} color={colors.textMuted} />
+          <Text style={[styles.bottomCtaText, typography.uiH3, { color: colors.textMuted }]}>
+            Under Editorial Review
+          </Text>
+        </View>
+      );
+    }
+
+    if (campaign.status === "goal_reached") {
+      return (
+        <TouchableOpacity
+          style={[styles.bottomCtaBtn, styles.goalReachedCtaBtn]}
+          onPress={() => router.push(`/back/${campaign.id}`)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="checkmark-circle-outline" size={18} color={colors.white} />
+          <Text style={[styles.bottomCtaText, typography.uiH3]}>
+            Goal Reached • Back Further Reach
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        style={styles.bottomCtaBtn}
+        onPress={() => router.push(`/back/${campaign.id}`)}
+        activeOpacity={0.8}
+      >
+        <Text style={[styles.bottomCtaText, typography.uiH3]}>Back This Campaign</Text>
+        <Ionicons name="arrow-forward" size={18} color={colors.white} />
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Top Floating App Bar */}
+        {/* Floating Top Nav Bar */}
         <View style={styles.topBar}>
           <TouchableOpacity
             style={styles.circleBtn}
             onPress={() => router.back()}
             activeOpacity={0.8}
+            accessibilityLabel="Back to previous screen"
           >
-            <Ionicons name="arrow-back" size={20} color={colors.slate900} />
+            <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.circleBtn}
-            onPress={handleShare}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="share-outline" size={20} color={colors.slate900} />
-          </TouchableOpacity>
+
+          <View style={styles.topRightActions}>
+            <TouchableOpacity
+              style={[styles.circleBtn, isSaved && styles.circleBtnActive]}
+              onPress={handleToggleSave}
+              activeOpacity={0.8}
+              accessibilityLabel="Save Campaign"
+            >
+              <Ionicons
+                name={isSaved ? "bookmark" : "bookmark-outline"}
+                size={19}
+                color={isSaved ? colors.amberDark : colors.textPrimary}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.circleBtn}
+              onPress={handleShare}
+              activeOpacity={0.8}
+              accessibilityLabel="Share Campaign"
+            >
+              <Ionicons name="share-outline" size={19} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Scrollable Editorial Content */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Cover Media */}
-          {campaign.cover_image_url && (
+          {campaign.coverImageUrl || campaign.cover_image_url ? (
             <Image
-              source={{ uri: campaign.cover_image_url }}
+              source={{ uri: campaign.coverImageUrl || campaign.cover_image_url }}
               style={styles.coverImage}
               resizeMode="cover"
             />
+          ) : (
+            <View style={[styles.coverImage, styles.placeholderCover]}>
+              <Ionicons name="megaphone-outline" size={48} color={colors.textMuted} />
+            </View>
           )}
 
-          {/* Article Header */}
+          {/* Article Editorial Header */}
           <View style={styles.articleHeader}>
             <View style={styles.metaRow}>
               <View style={styles.categoryPill}>
-                <Text style={[styles.categoryText, typography.micro]}>
+                <Text style={[styles.categoryText, typography.uiMicro]}>
                   {campaign.category.toUpperCase()}
                 </Text>
               </View>
               <StatusBadge status={campaign.status} />
             </View>
 
-            <Text style={[styles.title, typography.hero]}>{campaign.title}</Text>
-
-            <Text style={[styles.creatorLine, typography.caption]}>
-              Published by <Text style={styles.boldText}>{campaign.creator_name}</Text>
+            <Text style={[styles.title, typography.storyHero]}>
+              {campaign.title}
             </Text>
 
-            <Text style={[styles.summary, typography.bodyMedium]}>{campaign.summary}</Text>
+            {/* Creator & Publish Date Row */}
+            <View style={styles.creatorRow}>
+              <View style={styles.creatorAvatar}>
+                <Ionicons name="person" size={16} color={colors.primary} />
+              </View>
+              <View style={styles.creatorInfo}>
+                <View style={styles.creatorNameRow}>
+                  <Text style={[styles.creatorName, typography.uiBodyMedium]}>
+                    {creatorName}
+                  </Text>
+                  <View style={styles.creatorTypeBadge}>
+                    <Text style={[styles.creatorTypeText, typography.uiMicro]}>
+                      {creatorTypeLabel}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.publishDate, typography.uiMicro]}>
+                  Published on {publishDateFormatted}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.followBtn, isFollowing && styles.followingBtn]}
+                onPress={handleToggleFollow}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.followBtnText, typography.uiMicro, isFollowing && styles.followingBtnText]}>
+                  {isFollowing ? "Following ✓" : "+ Follow"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Summary Lead */}
+            <Text style={[styles.summary, typography.storyBodyMedium]}>
+              {campaign.summary}
+            </Text>
           </View>
 
-          {/* Funding Summary Card */}
+          {/* Funding & Audience Reach Panel */}
           <View style={styles.fundingCard}>
             <View style={styles.fundingTop}>
               <View>
-                <Text style={[styles.raisedAmount, typography.h1]}>
-                  ${campaign.amount_raised.toLocaleString()}
+                <Text style={[styles.raisedAmount, typography.uiTitle]}>
+                  ${amountRaised.toLocaleString()}
                 </Text>
-                <Text style={[styles.goalAmount, typography.caption]}>
-                  of ${campaign.funding_goal.toLocaleString()} goal ({percent}%)
+                <Text style={[styles.goalAmount, typography.uiCaption]}>
+                  of ${fundingGoal.toLocaleString()} ad budget ({percent}%)
                 </Text>
               </View>
-              <View style={styles.reachEstimateBadge}>
-                <Ionicons name="people" size={16} color={colors.primary} />
-                <Text style={[styles.reachBadgeText, typography.caption]}>
-                  ~{campaign.estimated_reach_mid.toLocaleString()} reach
+              <View style={styles.daysBadge}>
+                <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+                <Text style={[styles.daysText, typography.uiMicro]}>{daysRemaining}</Text>
+              </View>
+            </View>
+
+            <ProgressBar percent={percent} height={8} />
+
+            {/* Reach Metric Range */}
+            <View style={styles.reachPanelRow}>
+              <View style={styles.reachIconWrap}>
+                <Ionicons name="people" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.reachTextWrap}>
+                <View style={styles.reachRangeRow}>
+                  <Text style={[styles.reachRangeText, typography.uiH3]}>
+                    {reach.formattedRange}
+                  </Text>
+                  <View style={styles.estimateBadge}>
+                    <Text style={[styles.estimateBadgeText, typography.uiMicro]}>
+                      ESTIMATE, NOT A GUARANTEE
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.reachNotice, typography.uiMicro]}>
+                  Net ad funds (~95%) are deployed directly to targeted external audiences.
                 </Text>
               </View>
             </View>
-            <ProgressBar percent={percent} height={10} />
-            <Text style={[styles.reachDisclaimer, typography.micro]}>
-              *Backer contributions fund targeted advertising reach, not direct charitable donations.
-            </Text>
-          </View>
 
-          {/* Editorial Story Blocks */}
-          <View style={styles.storySection}>
-            <Text style={[styles.storyHeading, typography.h2]}>The Story</Text>
-
-            {(campaign.story || []).map((block, idx) => {
-              if (block.type === "heading") {
-                return (
-                  <Text key={idx} style={[styles.storySubHeading, typography.h2]}>
-                    {block.text}
-                  </Text>
-                );
-              }
-              if (block.type === "paragraph") {
-                return (
-                  <Text key={idx} style={[styles.storyParagraph, typography.body]}>
-                    {block.text}
-                  </Text>
-                );
-              }
-              if (block.type === "stat") {
-                return (
-                  <View key={idx} style={styles.statCallout}>
-                    <Text style={[styles.statValue, typography.hero]}>{block.value}</Text>
-                    <Text style={[styles.statLabel, typography.caption]}>{block.label}</Text>
-                  </View>
-                );
-              }
-              if (block.type === "image" && block.url) {
-                return (
-                  <View key={idx} style={styles.storyImageWrap}>
-                    <Image source={{ uri: block.url }} style={styles.storyImage} />
-                    {block.caption && (
-                      <Text style={[styles.storyCaption, typography.caption]}>
-                        {block.caption} {block.credit && `(Photo: ${block.credit})`}
-                      </Text>
-                    )}
-                  </View>
-                );
-              }
-              return null;
-            })}
-          </View>
-
-          {/* Public Supporting Sources Section (Mandatory Visible to Audiences) */}
-          <View style={styles.sourcesSection}>
-            <View style={styles.sourcesTitleRow}>
-              <Ionicons name="library" size={18} color={colors.primary} />
-              <Text style={[styles.sourcesTitle, typography.h2]}>Supporting Sources & Evidence</Text>
-            </View>
-            <Text style={[styles.sourcesSub, typography.caption]}>
-              Publicly verifiable data, government records, and investigative research behind this message.
-            </Text>
-
-            {(campaign.sources && campaign.sources.length > 0) ? (
-              campaign.sources.map((s, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={styles.sourceCard}
-                  onPress={() => s.url && Linking.openURL(s.url).catch(() => {})}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.sourceNumber}>
-                    <Text style={styles.sourceNumberText}>[{idx + 1}]</Text>
-                  </View>
-                  <View style={styles.sourceInfo}>
-                    <Text style={[styles.sourceItemTitle, typography.h3]}>{s.title}</Text>
-                    <Text style={[styles.sourceItemUrl, typography.micro]}>{s.url}</Text>
-                  </View>
-                  <Ionicons name="open-outline" size={16} color={colors.primary} />
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={[styles.noSourcesText, typography.caption]}>
-                Source citations verified during editorial review.
+            <View style={styles.antiDonationBanner}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.amberDark} />
+              <Text style={[styles.antiDonationText, typography.uiMicro]}>
+                Contributions fund verified advertising reach, not direct charitable gifts to the creator or organization.
               </Text>
+            </View>
+          </View>
+
+          {/* Editorial Story Blocks Rendered via StoryRenderer */}
+          <View style={styles.storyContainer}>
+            <Text style={[styles.sectionHeading, typography.storyH1]}>The Evidence & Story</Text>
+            <StoryRenderer blocks={campaign.story || []} />
+          </View>
+
+          {/* Supporting Sources Section (MANDATORY: Visible to ALL audiences) */}
+          <View style={styles.sourcesSection}>
+            <View style={styles.sourcesHeaderRow}>
+              <View style={styles.sourcesIconWrap}>
+                <Ionicons name="library-outline" size={20} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={[styles.sourcesTitle, typography.uiH2]}>
+                  Supporting Sources & Citations
+                </Text>
+                <Text style={[styles.sourcesSubtitle, typography.uiCaption]}>
+                  Publicly verifiable data, government records, and academic research
+                </Text>
+              </View>
+            </View>
+
+            {campaign.sources && campaign.sources.length > 0 ? (
+              <View style={styles.sourcesList}>
+                {campaign.sources.map((src, idx) => (
+                  <TouchableOpacity
+                    key={src.id || idx}
+                    style={styles.sourceCard}
+                    onPress={() => {
+                      if (src.url) {
+                        Linking.openURL(src.url).catch(() => {
+                          Alert.alert("Link Unavailable", `Could not open ${src.url}`);
+                        });
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.sourceNumberBadge}>
+                      <Text style={[styles.sourceNumberText, typography.uiMicro]}>
+                        [{idx + 1}]
+                      </Text>
+                    </View>
+                    <View style={styles.sourceInfo}>
+                      <Text style={[styles.sourceItemTitle, typography.uiH3]}>
+                        {src.title}
+                      </Text>
+                      <Text style={[styles.sourceItemUrl, typography.uiMicro]} numberOfLines={1}>
+                        {src.url}
+                      </Text>
+                    </View>
+                    <Ionicons name="open-outline" size={18} color={colors.primary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.noSourcesBox}>
+                <Ionicons name="checkmark-circle-outline" size={18} color={colors.success} />
+                <Text style={[styles.noSourcesText, typography.uiCaption]}>
+                  Primary source documentation verified by platform moderators.
+                </Text>
+              </View>
             )}
           </View>
 
-          {/* Expandable Accordions */}
+          {/* Transparency Accordions */}
           <View style={styles.accordionsSection}>
+            <Text style={[styles.sectionHeading, typography.uiH2]}>
+              Transparency & Governance
+            </Text>
+
             {/* Accordion 1: Use of Funds */}
-            <Accordion title="How Contributions Are Allocated" iconName="cash-outline">
-              <Text style={[styles.accordionBody, typography.body]}>
-                This platform is <Text style={styles.boldText}>not a charity or donation site</Text>. Contributions directly purchase digital advertising placements on search and social channels to put this message in front of people outside the creator's network.
-              </Text>
-              <View style={styles.feeBreakdown}>
-                <Text style={[styles.feeLine, typography.caption]}>
-                  • <Text style={styles.boldText}>95%</Text> allocated directly to advertising budget
+            <Accordion title="Use of Funds & Distribution Budget" iconName="cash-outline">
+              <View style={styles.accordionContent}>
+                <Text style={[styles.accordionP, typography.uiBody]}>
+                  A contribution supports the distribution and reach of a campaign message; it does not directly fund the cause, person, or organization described in that message.
                 </Text>
-                <Text style={[styles.feeLine, typography.caption]}>
-                  • <Text style={styles.boldText}>5%</Text> platform fee for moderation, verification, and ad delivery
-                </Text>
-                <Text style={[styles.feeLine, typography.caption]}>
-                  • Unspent funds from completed ad runs are refunded or rolled into future distribution.
-                </Text>
+                <View style={styles.feeBreakdownList}>
+                  <View style={styles.feeItem}>
+                    <Text style={[styles.feeBold, typography.uiH3]}>95% Net Ad Spend</Text>
+                    <Text style={[styles.feeDetail, typography.uiCaption]}>
+                      Directly purchases advertising impressions across targeted networks.
+                    </Text>
+                  </View>
+                  <View style={styles.feeItem}>
+                    <Text style={[styles.feeBold, typography.uiH3]}>5% Platform Fee</Text>
+                    <Text style={[styles.feeDetail, typography.uiCaption]}>
+                      Covers editorial fact-checking, human source review, and delivery infrastructure.
+                    </Text>
+                  </View>
+                  <View style={styles.feeItem}>
+                    <Text style={[styles.feeBold, typography.uiH3]}>Unspent Funds & Refunds</Text>
+                    <Text style={[styles.feeDetail, typography.uiCaption]}>
+                      If an ad run cannot fulfill due to inventory limits or is discontinued, unspent funds are refunded pro-rata to backers or held for future distribution with full disclosure.
+                    </Text>
+                  </View>
+                </View>
               </View>
             </Accordion>
 
             {/* Accordion 2: Audience & Distribution */}
-            <Accordion title="Intended Audience & Targeting" iconName="navigate-outline">
-              <Text style={[styles.accordionBody, typography.body]}>
-                Targeting parameters are configured during campaign creation and finalized during review.
-              </Text>
-              <View style={styles.targetingBox}>
-                <Text style={[styles.targetLabel, typography.caption]}>
-                  <Text style={styles.boldText}>Locations:</Text> {(campaign.reach_settings?.locations || ["Regional Metros"]).join(", ")}
+            <Accordion title="Audience Targeting & Placements" iconName="navigate-outline">
+              <View style={styles.accordionContent}>
+                <Text style={[styles.accordionP, typography.uiBody]}>
+                  Ad creatives and audience targeting parameters are reviewed for truth-in-advertising compliance.
                 </Text>
-                <Text style={[styles.targetLabel, typography.caption]}>
-                  <Text style={styles.boldText}>Channels:</Text> {(campaign.reach_settings?.channels || ["Social Media Feeds", "News Networks"]).join(", ")}
-                </Text>
-                <Text style={[styles.targetLabel, typography.caption]}>
-                  <Text style={styles.boldText}>Duration:</Text> {campaign.reach_settings?.duration_days || 30} days
-                </Text>
+                <View style={styles.targetingBox}>
+                  <View style={styles.targetRow}>
+                    <Text style={[styles.targetKey, typography.uiCaption]}>Ad Headline:</Text>
+                    <Text style={[styles.targetVal, typography.uiH3]}>
+                      {campaign.adHeadline || campaign.ad_headline || campaign.title}
+                    </Text>
+                  </View>
+                  <View style={styles.targetRow}>
+                    <Text style={[styles.targetKey, typography.uiCaption]}>Target Channels:</Text>
+                    <Text style={[styles.targetVal, typography.uiCaption]}>
+                      {(campaign.reach_settings?.channels || ["Social Media Feeds", "Independent Digital News", "Search Keywords"]).join(", ")}
+                    </Text>
+                  </View>
+                  <View style={styles.targetRow}>
+                    <Text style={[styles.targetKey, typography.uiCaption]}>Locations:</Text>
+                    <Text style={[styles.targetVal, typography.uiCaption]}>
+                      {(campaign.reach_settings?.locations || ["Targeted Regional Metros"]).join(", ")}
+                    </Text>
+                  </View>
+                  <View style={styles.targetRow}>
+                    <Text style={[styles.targetKey, typography.uiCaption]}>Duration:</Text>
+                    <Text style={[styles.targetVal, typography.uiCaption]}>
+                      {campaign.reach_settings?.duration_days || 30} days of continuous delivery
+                    </Text>
+                  </View>
+                </View>
               </View>
             </Accordion>
 
-            {/* Accordion 3: Review & Trust */}
-            <Accordion title="Editorial Review & Trust" iconName="shield-checkmark-outline">
-              <Text style={[styles.accordionBody, typography.body]}>
-                Before any campaign opens for funding, human reviewers verify that supporting sources exist, claims are fact-checked, and ad copy adheres to truth-in-advertising guidelines.
-              </Text>
+            {/* Accordion 3: Review, Trust & Feedback (NO FAKE TRUST SCORE) */}
+            <Accordion title="Review, Fact-Checking & Trust" iconName="shield-checkmark-outline">
+              <View style={styles.accordionContent}>
+                <Text style={[styles.accordionP, typography.uiBody]}>
+                  Trust on Amplify is earned through public evidence, not algorithmic vanity metrics.
+                </Text>
+                <View style={styles.trustProcessList}>
+                  <Text style={[styles.trustStep, typography.uiCaption]}>
+                    • <Text style={styles.boldText}>Human Fact-Checking:</Text> Reviewers check every quoted statistic against primary academic or governmental sources.
+                  </Text>
+                  <Text style={[styles.trustStep, typography.uiCaption]}>
+                    • <Text style={styles.boldText}>Ad Copy Veracity:</Text> Ad copy must accurately reflect the documented story without sensationalist or misleading claims.
+                  </Text>
+                  <Text style={[styles.trustStep, typography.uiCaption]}>
+                    • <Text style={styles.boldText}>Independent Ad Networks:</Text> Placements run through audited exchanges with transparent post-campaign delivery reports.
+                  </Text>
+                </View>
+              </View>
             </Accordion>
           </View>
 
-          {/* Reader Feedback Reaction */}
-          <View style={styles.feedbackCard}>
-            <Text style={[styles.feedbackTitle, typography.h3]}>Did this message inform or change your perspective?</Text>
-            <View style={styles.feedbackBtnRow}>
-              {["No", "Somewhat", "Yes"].map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[
-                    styles.feedbackBtn,
-                    feedbackSelected === option && styles.feedbackBtnSelected,
-                  ]}
-                  onPress={() => handleFeedback(option)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.feedbackBtnText,
-                      typography.h3,
-                      feedbackSelected === option && styles.feedbackBtnTextSelected,
-                    ]}
-                  >
-                    {option}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {feedbackSelected && (
-              <Text style={[styles.feedbackThanks, typography.caption]}>
-                Thank you! Your feedback helps evaluate message impact.
+          {/* Feedback Reaction Prompt Section */}
+          <View style={styles.feedbackSection}>
+            <View style={styles.feedbackHeader}>
+              <Ionicons name="chatbubbles-outline" size={20} color={colors.primary} />
+              <Text style={[styles.feedbackTitle, typography.uiH3]}>
+                Message Evaluation & Feedback
               </Text>
+            </View>
+
+            {/* Question 1: Visuals */}
+            <View style={styles.feedbackQuestionBlock}>
+              <Text style={[styles.questionText, typography.uiBody]}>
+                Did the visuals make you want to keep reading?
+              </Text>
+              <View style={styles.optionsRow}>
+                {(["No", "Somewhat", "Yes"] as const).map((opt) => (
+                  <TouchableOpacity
+                    key={opt}
+                    style={[
+                      styles.optionButton,
+                      visualsFeedback === opt && styles.optionButtonActive,
+                    ]}
+                    onPress={() => handleFeedbackSubmit("visuals", opt)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.optionButtonText,
+                        typography.uiCaption,
+                        visualsFeedback === opt && styles.optionButtonTextActive,
+                      ]}
+                    >
+                      {opt}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Question 2: Perspective change */}
+            <View style={styles.feedbackQuestionBlock}>
+              <Text style={[styles.questionText, typography.uiBody]}>
+                Did this message change your mind?
+              </Text>
+              <View style={styles.optionsRow}>
+                {(["No", "Somewhat", "Yes"] as const).map((opt) => (
+                  <TouchableOpacity
+                    key={opt}
+                    style={[
+                      styles.optionButton,
+                      mindFeedback === opt && styles.optionButtonActive,
+                    ]}
+                    onPress={() => handleFeedbackSubmit("mind", opt)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.optionButtonText,
+                        typography.uiCaption,
+                        mindFeedback === opt && styles.optionButtonTextActive,
+                      ]}
+                    >
+                      {opt}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {feedbackSubmitted && (
+              <View style={styles.feedbackThanksRow}>
+                <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                <Text style={[styles.feedbackThanksText, typography.uiMicro]}>
+                  Thank you! Your feedback helps evaluate message resonance and clarity.
+                </Text>
+              </View>
             )}
+          </View>
+
+          {/* In-Page Share Banner */}
+          <View style={styles.shareBanner}>
+            <View style={styles.shareBannerTextWrap}>
+              <Text style={[styles.shareBannerTitle, typography.uiH3]}>
+                Share This Message
+              </Text>
+              <Text style={[styles.shareBannerSub, typography.uiCaption]}>
+                Help put this evidence in front of colleagues, journalists, and decision-makers.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.shareBannerBtn}
+              onPress={handleShare}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="share-social-outline" size={18} color={colors.primary} />
+              <Text style={[styles.shareBannerBtnText, typography.uiH3]}>Share</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
 
-        {/* Sticky Bottom Backing Bar */}
+        {/* Sticky Bottom Bar (Safe Content Padding ensures story is never covered) */}
         <View style={styles.stickyBottomBar}>
-          <View style={styles.bottomBarLeft}>
-            <Text style={[styles.bottomRaised, typography.h3]}>
-              ${campaign.amount_raised.toLocaleString()}
+          <View style={styles.bottomStatsCol}>
+            <Text style={[styles.bottomRaisedText, typography.uiH2]}>
+              ${amountRaised.toLocaleString()}
             </Text>
-            <Text style={[styles.bottomGoal, typography.micro]}>
-              {percent}% of ${campaign.funding_goal.toLocaleString()}
+            <Text style={[styles.bottomGoalText, typography.uiMicro]}>
+              {percent}% of ${fundingGoal.toLocaleString()} goal
             </Text>
           </View>
-
-          {campaign.status === "completed" ? (
-            <TouchableOpacity
-              style={[styles.bottomCtaBtn, styles.reportBtn]}
-              onPress={() => router.push(`/report/${campaign.id}`)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="bar-chart" size={18} color={colors.slate900} />
-              <Text style={[styles.bottomCtaText, typography.h3, { color: colors.slate900 }]}>
-                View Report
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.bottomCtaBtn}
-              onPress={() => router.push(`/back/${campaign.id}`)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.bottomCtaText, typography.h3]}>Back This Campaign</Text>
-              <Ionicons name="arrow-forward" size={18} color={colors.white} />
-            </TouchableOpacity>
-          )}
+          <View style={styles.bottomCtaWrap}>
+            {renderBottomCta()}
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -359,234 +710,320 @@ export default function CampaignDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: colors.slate50,
+    position: "relative",
   },
-  loadingContainer: {
+  loadingPadding: {
+    padding: spacing.s20,
+    gap: spacing.s16,
+  },
+  errorWrapper: {
     flex: 1,
-    alignItems: "center",
     justifyContent: "center",
-  },
-  errorContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: spacing.xl,
-  },
-  errorText: {
-    color: colors.slate800,
-    marginBottom: spacing.md,
-  },
-  backBtn: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: spacing.radiusMd,
-  },
-  backBtnText: {
-    color: colors.white,
+    padding: spacing.s20,
   },
   topBar: {
     position: "absolute",
-    top: spacing.md,
-    left: spacing.md,
-    right: spacing.md,
-    zIndex: 10,
+    top: spacing.s16,
+    left: spacing.s16,
+    right: spacing.s16,
+    zIndex: 20,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
   },
   circleBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255, 255, 255, 0.92)",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.surfaceGlass,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 4,
+  },
+  circleBtnActive: {
+    backgroundColor: colors.amberLight,
+    borderColor: colors.amberDark,
+  },
+  topRightActions: {
+    flexDirection: "row",
+    gap: spacing.s8,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100, // room for sticky bottom bar
+    paddingBottom: 120, // Strict spacing ensures sticky bottom bar never covers text
   },
   coverImage: {
     width: "100%",
-    height: 250,
+    height: 260,
     backgroundColor: colors.slate200,
   },
+  placeholderCover: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
   articleHeader: {
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.s20,
+    paddingTop: spacing.s20,
+    paddingBottom: spacing.s16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.slate200,
+    borderBottomColor: colors.cardBorder,
   },
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: spacing.sm,
+    marginBottom: spacing.s12,
   },
   categoryPill: {
-    backgroundColor: colors.slate100,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    backgroundColor: colors.surfaceNeutral,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: spacing.s10,
+    paddingVertical: 4,
     borderRadius: spacing.radiusSm,
   },
   categoryText: {
-    color: colors.slate700,
+    color: colors.textSecondary,
     fontWeight: "700",
   },
   title: {
-    color: colors.slate900,
-    marginBottom: spacing.xs,
+    color: colors.textPrimary,
+    marginBottom: spacing.s12,
   },
-  creatorLine: {
-    color: colors.slate500,
-    marginBottom: spacing.md,
+  creatorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: spacing.s16,
+    gap: spacing.s10,
   },
-  boldText: {
-    fontWeight: "700",
-    color: colors.slate800,
+  creatorAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  summary: {
-    color: colors.slate700,
-    fontStyle: "italic",
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
-    paddingLeft: spacing.md,
+  creatorInfo: {
+    flex: 1,
   },
-  fundingCard: {
-    margin: spacing.lg,
-    backgroundColor: colors.white,
-    padding: spacing.lg,
-    borderRadius: spacing.radiusLg,
+  creatorNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.s8,
+    flexWrap: "wrap",
+  },
+  creatorName: {
+    color: colors.textPrimary,
+  },
+  creatorTypeBadge: {
+    backgroundColor: colors.surfaceNeutral,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: spacing.radiusSm,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+  },
+  creatorTypeText: {
+    color: colors.textMuted,
+    fontSize: 10,
+  },
+  publishDate: {
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  followBtn: {
+    paddingHorizontal: spacing.s12,
+    paddingVertical: 6,
+    borderRadius: spacing.radiusFull,
+    backgroundColor: colors.surfaceNeutral,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    minHeight: 32,
+    justifyContent: "center",
+  },
+  followingBtn: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  followBtnText: {
+    color: colors.textSecondary,
+    fontWeight: "600",
+  },
+  followingBtnText: {
+    color: colors.primary,
+    fontWeight: "700",
+  },
+  summary: {
+    color: colors.textSecondary,
+    lineHeight: 24,
+    marginTop: spacing.s8,
+  },
+  fundingCard: {
+    backgroundColor: colors.surface,
+    marginHorizontal: spacing.s20,
+    marginTop: spacing.s16,
+    marginBottom: spacing.s20,
+    borderRadius: spacing.radiusCard,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    padding: spacing.s16,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   fundingTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: spacing.sm,
+    alignItems: "flex-start",
+    marginBottom: spacing.s12,
   },
   raisedAmount: {
-    color: colors.slate900,
+    color: colors.textPrimary,
   },
   goalAmount: {
-    color: colors.slate500,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
-  reachEstimateBadge: {
+  daysBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: spacing.radiusFull,
     gap: 4,
-  },
-  reachBadgeText: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  reachDisclaimer: {
-    color: colors.slate400,
-    marginTop: spacing.sm,
-  },
-  storySection: {
-    backgroundColor: colors.white,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-    padding: spacing.xl,
-    borderRadius: spacing.radiusLg,
+    backgroundColor: colors.surfaceNeutral,
+    paddingHorizontal: spacing.s8,
+    paddingVertical: 4,
+    borderRadius: spacing.radiusFull,
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  storyHeading: {
-    color: colors.slate900,
-    marginBottom: spacing.lg,
+  daysText: {
+    color: colors.textSecondary,
+    fontWeight: "600",
   },
-  storySubHeading: {
-    color: colors.slate900,
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
+  reachPanelRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: colors.primaryLight,
+    padding: spacing.s12,
+    borderRadius: spacing.radiusInput,
+    marginTop: spacing.s12,
+    gap: spacing.s10,
   },
-  storyParagraph: {
-    color: colors.slate700,
-    marginBottom: spacing.md,
+  reachIconWrap: {
+    marginTop: 2,
   },
-  statCallout: {
-    backgroundColor: colors.slate50,
-    borderWidth: 1,
-    borderColor: colors.slate200,
-    borderRadius: spacing.radiusMd,
-    padding: spacing.lg,
+  reachTextWrap: {
+    flex: 1,
+  },
+  reachRangeRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginVertical: spacing.md,
+    gap: spacing.s8,
+    flexWrap: "wrap",
+    marginBottom: 2,
   },
-  statValue: {
-    color: colors.primary,
+  reachRangeText: {
+    color: colors.primaryDark,
   },
-  statLabel: {
-    color: colors.slate600,
-    marginTop: 4,
+  estimateBadge: {
+    backgroundColor: colors.amberLight,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: spacing.radiusSm,
   },
-  storyImageWrap: {
-    marginVertical: spacing.md,
+  estimateBadgeText: {
+    color: colors.amberDark,
+    fontSize: 9,
+    fontWeight: "800",
   },
-  storyImage: {
-    width: "100%",
-    height: 200,
-    borderRadius: spacing.radiusMd,
-    backgroundColor: colors.slate200,
+  reachNotice: {
+    color: colors.textMuted,
+    lineHeight: 16,
   },
-  storyCaption: {
-    color: colors.slate500,
-    marginTop: 6,
-    fontStyle: "italic",
+  antiDonationBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: spacing.s10,
+    paddingHorizontal: 2,
+  },
+  antiDonationText: {
+    color: colors.amberDark,
+    flex: 1,
+    lineHeight: 16,
+  },
+  storyContainer: {
+    paddingHorizontal: spacing.s20,
+    backgroundColor: colors.background,
+    marginVertical: spacing.s12,
+  },
+  sectionHeading: {
+    color: colors.textPrimary,
+    marginBottom: spacing.s12,
   },
   sourcesSection: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-    backgroundColor: colors.white,
-    padding: spacing.lg,
-    borderRadius: spacing.radiusLg,
-    borderWidth: 1,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.s20,
+    paddingVertical: spacing.s20,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: colors.cardBorder,
+    marginVertical: spacing.s12,
   },
-  sourcesTitleRow: {
+  sourcesHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
-    marginBottom: 4,
+    gap: spacing.s12,
+    marginBottom: spacing.s16,
+  },
+  sourcesIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sourcesTitle: {
-    color: colors.slate900,
+    color: colors.textPrimary,
   },
-  sourcesSub: {
-    color: colors.slate500,
-    marginBottom: spacing.md,
+  sourcesSubtitle: {
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  sourcesList: {
+    gap: spacing.s10,
   },
   sourceCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.slate50,
+    backgroundColor: colors.surfaceNeutral,
     borderWidth: 1,
-    borderColor: colors.slate200,
-    borderRadius: spacing.radiusMd,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+    borderColor: colors.cardBorder,
+    borderRadius: spacing.radiusInput,
+    padding: spacing.s12,
+    gap: spacing.s10,
   },
-  sourceNumber: {
-    marginRight: spacing.sm,
+  sourceNumberBadge: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: spacing.radiusSm,
   },
   sourceNumberText: {
     color: colors.primary,
@@ -594,126 +1031,231 @@ const styles = StyleSheet.create({
   },
   sourceInfo: {
     flex: 1,
-    marginRight: spacing.sm,
   },
   sourceItemTitle: {
-    color: colors.slate900,
+    color: colors.textPrimary,
+    marginBottom: 2,
   },
   sourceItemUrl: {
-    color: colors.slate500,
-    marginTop: 2,
+    color: colors.primary,
+  },
+  noSourcesBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: spacing.s12,
+    backgroundColor: colors.surfaceNeutral,
+    borderRadius: spacing.radiusInput,
   },
   noSourcesText: {
-    color: colors.slate400,
-    fontStyle: "italic",
+    color: colors.textSecondary,
   },
   accordionsSection: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.s20,
+    paddingVertical: spacing.s16,
+    gap: spacing.s12,
   },
-  accordionBody: {
-    color: colors.slate700,
-    marginBottom: spacing.sm,
+  accordionContent: {
+    gap: spacing.s10,
   },
-  feeBreakdown: {
-    gap: 4,
+  accordionP: {
+    color: colors.textSecondary,
+    lineHeight: 22,
   },
-  feeLine: {
-    color: colors.slate600,
+  feeBreakdownList: {
+    backgroundColor: colors.surfaceNeutral,
+    borderRadius: spacing.radiusInput,
+    padding: spacing.s12,
+    gap: spacing.s8,
+  },
+  feeItem: {
+    gap: 2,
+  },
+  feeBold: {
+    color: colors.textPrimary,
+  },
+  feeDetail: {
+    color: colors.textMuted,
   },
   targetingBox: {
-    gap: 4,
-    marginTop: spacing.xs,
+    backgroundColor: colors.surfaceNeutral,
+    borderRadius: spacing.radiusInput,
+    padding: spacing.s12,
+    gap: spacing.s8,
   },
-  targetLabel: {
-    color: colors.slate600,
+  targetRow: {
+    gap: 2,
   },
-  feedbackCard: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
-    backgroundColor: colors.white,
-    padding: spacing.lg,
-    borderRadius: spacing.radiusLg,
+  targetKey: {
+    color: colors.textMuted,
+  },
+  targetVal: {
+    color: colors.textPrimary,
+  },
+  trustProcessList: {
+    gap: spacing.s8,
+  },
+  trustStep: {
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  boldText: {
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  feedbackSection: {
+    backgroundColor: colors.surface,
+    marginHorizontal: spacing.s20,
+    marginVertical: spacing.s16,
+    borderRadius: spacing.radiusCard,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+    padding: spacing.s20,
+    gap: spacing.s16,
+  },
+  feedbackHeader: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: spacing.s8,
   },
   feedbackTitle: {
-    color: colors.slate900,
-    textAlign: "center",
-    marginBottom: spacing.md,
+    color: colors.textPrimary,
   },
-  feedbackBtnRow: {
+  feedbackQuestionBlock: {
+    gap: spacing.s8,
+  },
+  questionText: {
+    color: colors.textSecondary,
+  },
+  optionsRow: {
     flexDirection: "row",
-    gap: spacing.sm,
-    width: "100%",
+    gap: spacing.s10,
   },
-  feedbackBtn: {
+  optionButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: spacing.s10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.slate100,
-    borderRadius: spacing.radiusMd,
+    borderRadius: spacing.radiusInput,
+    backgroundColor: colors.surfaceNeutral,
     borderWidth: 1,
-    borderColor: colors.slate200,
+    borderColor: colors.cardBorder,
+    minHeight: 40,
   },
-  feedbackBtnSelected: {
+  optionButtonActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  feedbackBtnText: {
-    color: colors.slate700,
+  optionButtonText: {
+    color: colors.textSecondary,
+    fontWeight: "600",
   },
-  feedbackBtnTextSelected: {
+  optionButtonTextActive: {
     color: colors.white,
+    fontWeight: "700",
   },
-  feedbackThanks: {
+  feedbackThanksRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colors.successLight,
+    padding: spacing.s10,
+    borderRadius: spacing.radiusSm,
+  },
+  feedbackThanksText: {
     color: colors.successDark,
-    marginTop: spacing.sm,
+    flex: 1,
+  },
+  shareBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.primaryLight,
+    marginHorizontal: spacing.s20,
+    marginBottom: spacing.s24,
+    borderRadius: spacing.radiusCard,
+    padding: spacing.s16,
+    gap: spacing.s12,
+  },
+  shareBannerTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  shareBannerTitle: {
+    color: colors.primaryDark,
+  },
+  shareBannerSub: {
+    color: colors.textSecondary,
+  },
+  shareBannerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.s16,
+    paddingVertical: spacing.s10,
+    borderRadius: spacing.radiusInput,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    minHeight: spacing.minTouchTarget,
+  },
+  shareBannerBtnText: {
+    color: colors.primary,
   },
   stickyBottomBar: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: colors.slate200,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    borderTopColor: colors.cardBorder,
+    paddingHorizontal: spacing.s20,
+    paddingVertical: spacing.s12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 8,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 10,
+    gap: spacing.s16,
   },
-  bottomBarLeft: {
+  bottomStatsCol: {
+    justifyContent: "center",
+  },
+  bottomRaisedText: {
+    color: colors.textPrimary,
+  },
+  bottomGoalText: {
+    color: colors.textMuted,
+  },
+  bottomCtaWrap: {
     flex: 1,
-  },
-  bottomRaised: {
-    color: colors.slate900,
-  },
-  bottomGoal: {
-    color: colors.slate500,
   },
   bottomCtaBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: 13,
-    borderRadius: spacing.radiusMd,
-    gap: 6,
+    paddingVertical: spacing.s12,
+    borderRadius: spacing.radiusInput,
+    minHeight: spacing.minTouchTarget,
   },
-  reportBtn: {
-    backgroundColor: colors.slate100,
+  reportCtaBtn: {
+    backgroundColor: colors.surfaceNeutral,
     borderWidth: 1,
-    borderColor: colors.slate300,
+    borderColor: colors.cardBorder,
+  },
+  goalReachedCtaBtn: {
+    backgroundColor: colors.success,
+  },
+  reviewCtaBtn: {
+    backgroundColor: colors.surfaceNeutral,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   bottomCtaText: {
     color: colors.white,

@@ -30,3 +30,14 @@ Tracking all files created, modified, or planned in the repository with paths an
 7. [UPDATE] backend/app/routers/campaigns.py
    - Path: backend/app/routers/campaigns.py
    - Description: Updated FastAPI campaigns list endpoint to support closest_to_goal sort and min_progress query filter parameters.
+
+## Phase 3: Campaign Detail (Current Phase)
+
+8. [UPDATE] mobile/lib/api.ts
+   - Path: mobile/lib/api.ts
+   - Description: Added submitFeedback, toggleSaveCampaign, isCampaignSaved, toggleFollowCreator, and isCreatorFollowed API adapter methods.
+
+9. [UPDATE] mobile/app/campaign/[id].tsx
+   - Path: mobile/app/campaign/[id].tsx
+   - Description: Complete editorial reading experience with Georgia serif typography, inline StoryRenderer, visible supporting sources, funding & reach metrics, 3 transparent accordions (Use of Funds, Audience & Distribution, Review & Trust), dual feedback reaction polls ('Did visuals keep you reading?' and 'Did this change your mind?'), Save and Follow actions, StickyBottomBar with safe content padding, and multi-state status handling.
+

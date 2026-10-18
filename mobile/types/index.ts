@@ -19,6 +19,7 @@ export type CreatorType =
 export type CampaignStatus =
   | "draft"
   | "submitted"
+  | "under_review"
   | "changes_requested"
   | "approved"
   | "available_for_funding"
