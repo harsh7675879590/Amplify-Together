@@ -49,13 +49,17 @@ Tracking all files created, modified, or planned in the repository with paths an
 
 ## Phase 6: Creator Dashboard, Activity, Profile
 
-13. [UPDATE] mobile/app/(tabs)/profile.tsx
-    - Path: mobile/app/(tabs)/profile.tsx
-    - Description: Profile tab featuring Creator Dashboard with lifecycle tabs, analytics modal, backed/saved campaigns, and Reviewer mode demo toggle.
+13. [NEW] mobile/app/dashboard.tsx
+    - Path: mobile/app/dashboard.tsx
+    - Description: Dedicated Creator Dashboard with 6 lifecycle tabs (Drafts, Under Review, Published/Funding, Promoting, Completed, Requires Action), campaign cards with thumbnails and deadlines, actions (edit draft, preview, moderation feedback modal, share link, final report), campaign analytics modal with strictly separated estimated vs measured reach delivery, and reviewer mode demo integration.
 
-14. [UPDATE] mobile/app/(tabs)/activity.tsx
+14. [UPDATE] mobile/app/(tabs)/profile.tsx
+    - Path: mobile/app/(tabs)/profile.tsx
+    - Description: Profile tab featuring guest/authenticated state, quick sign-in/register modal, Creator Dashboard shortcut, backed campaigns with receipt viewer, saved campaigns, payment history, settings with Reviewer Mode demo toggle, and help links.
+
+15. [UPDATE] mobile/app/(tabs)/activity.tsx
     - Path: mobile/app/(tabs)/activity.tsx
-    - Description: Activity tab with notifications grouped by Today / Earlier, read/unread states, followed campaigns with progress, and category settings.
+    - Description: Activity tab with notifications grouped by Today / Earlier, read/unread states, followed campaigns with progress, and notification settings category toggles.
 
 ## Phase 7: Secondary Pages, Polish, Accessibility
 
