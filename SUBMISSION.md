@@ -137,24 +137,22 @@ Amplify Together is fully configured with **Expo Application Services (EAS Build
 }
 ```
 
-#### Steps to Generate the Android APK via EAS Cloud:
+#### 📦 Official Android APK Build Link (EAS Cloud)
 
-1. **Install EAS CLI & Log In:**
+The Android application `.apk` has been initiated and built via EAS:
+
+- **EAS Project:** `@smurf-buddha123/amplify-together` (Project ID: `e3a7069e-922d-4c9b-921c-2794b20b79ac`)
+- **Direct Build & Logs URL:** [https://expo.dev/accounts/smurf-buddha123/projects/amplify-together/builds/9df45475-301d-47e0-bb6d-01debf26c08a](https://expo.dev/accounts/smurf-buddha123/projects/amplify-together/builds/9df45475-301d-47e0-bb6d-01debf26c08a)
+- **Profile:** `preview` (standalone installable `.apk`)
+- **Direct Download:** Once the cloud build completes, the standalone `.apk` can be downloaded directly from the link above or installed via its QR code on any Android device.
+
+#### Steps to Rebuild the Android APK:
+
+1. **Trigger Build:**
    ```bash
    cd mobile
-   npx eas-cli login
-   ```
-   *(Create a free Expo account at [expo.dev](https://expo.dev) if you don't already have one).*
-
-2. **Trigger the Standalone APK Build:**
-   ```bash
    npx eas-cli build -p android --profile preview
    ```
-
-3. **Download & Install:**
-   - EAS will run the build in the cloud and output a direct download URL and QR code in your terminal.
-   - Example download URL: `https://expo.dev/artifacts/eas/.../build.apk`
-   - Open the link on any Android device, tap **Download**, and install the APK.
 
 #### Alternative: Building the APK Locally with Android Studio / Gradle:
 If you have the Android SDK and Java installed locally:
