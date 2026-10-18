@@ -142,7 +142,7 @@ Amplify Together is fully configured with **Expo Application Services (EAS Build
 The Android application `.apk` has been initiated and built via EAS:
 
 - **EAS Project:** `@smurf-buddha123/amplify-together` (Project ID: `e3a7069e-922d-4c9b-921c-2794b20b79ac`)
-- **Direct Build & Logs URL:** [https://expo.dev/accounts/smurf-buddha123/projects/amplify-together/builds/9df45475-301d-47e0-bb6d-01debf26c08a](https://expo.dev/accounts/smurf-buddha123/projects/amplify-together/builds/9df45475-301d-47e0-bb6d-01debf26c08a)
+- **Direct Build & Logs URL:** [https://expo.dev/accounts/smurf-buddha123/projects/amplify-together/builds/e5ba54c6-ec12-44ab-ae10-26bd9b515915](https://expo.dev/accounts/smurf-buddha123/projects/amplify-together/builds/e5ba54c6-ec12-44ab-ae10-26bd9b515915)
 - **Profile:** `preview` (standalone installable `.apk`)
 - **Direct Download:** Once the cloud build completes, the standalone `.apk` can be downloaded directly from the link above or installed via its QR code on any Android device.
 
