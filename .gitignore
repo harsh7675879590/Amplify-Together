@@ -37,3 +37,7 @@ backend/amplify.db
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Binary Native Builds (>100MB)
+*.apk
+*.aab

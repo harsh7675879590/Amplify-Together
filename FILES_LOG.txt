@@ -71,4 +71,12 @@ Tracking all files created, modified, or planned in the repository with paths an
     - Path: SUBMISSION.md
     - Description: Official Hackathon Submission Document containing the Demo Video walkthrough links, timestamped narration script, Android APK build guide, iOS TestFlight distribution steps, and judging verification path.
 
+18. [NEW] demo_video.mp4
+    - Path: demo_video.mp4
+    - Description: Master walkthrough demo video encoded in standard H.264 MP4 format demonstrating all key features, user flows, editorial reader, backing checkout, wizard, and creator analytics.
+
+19. [NEW] amplify-together.apk
+    - Path: amplify-together.apk
+    - Description: Standalone compiled Android APK application build generated via EAS Build preview profile, installable directly on Android devices.
+
 
