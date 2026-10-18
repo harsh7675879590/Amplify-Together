@@ -1,0 +1,32 @@
+# Amplify Together - Files Log
+Tracking all files created, modified, or planned in the repository with paths and descriptions.
+
+## Phase 2: Home and Explore (Current Phase)
+
+1. [NEW] mobile/components/FeaturedCarousel.tsx
+   - Path: mobile/components/FeaturedCarousel.tsx
+   - Description: Horizontal carousel component showcasing featured campaigns with cover images, category badges, Georgia serif headlines, progress metrics, estimated reach, and direct action triggers.
+
+2. [NEW] mobile/components/FilterBottomSheet.tsx
+   - Path: mobile/components/FilterBottomSheet.tsx
+   - Description: Bottom sheet modal interface allowing backers to filter campaigns by category (all 10 categories), funding status (All, Available for Funding, Promoting, Completed), and minimum progress percentage (0%, 25%, 50%, 75%, 90%).
+
+3. [UPDATE] mobile/components/CampaignCard.tsx
+   - Path: mobile/components/CampaignCard.tsx
+   - Description: Refined campaign feed card with cover image, category badge, title, creator, short summary, raised/goal progress bar, estimated reach at goal, and explicit 'Back This Campaign' button.
+
+4. [UPDATE] mobile/lib/api.ts
+   - Path: mobile/lib/api.ts
+   - Description: Enhanced getCampaigns method supporting debounced search, category filtering, sort control ('funded', 'ending_soon', 'newest', 'closest_to_goal'), status filtering, and minimum progress thresholds.
+
+5. [UPDATE] mobile/app/(tabs)/index.tsx
+   - Path: mobile/app/(tabs)/index.tsx
+   - Description: Redesigned Home tab with editorial Hero (headline, one-line community reach explanation, CTAs, pure config-calculated reach formula '$10 could reach about 840–1,560 people' with 'Estimate, not a guarantee'), Featured Campaigns horizontal carousel, How It Works (Create -> Review -> Amplify), Campaign Feed, and Demo Data footer.
+
+6. [UPDATE] mobile/app/(tabs)/explore.tsx
+   - Path: mobile/app/(tabs)/explore.tsx
+   - Description: Upgraded Explore tab featuring debounced search bar, horizontal category chips, 4-way sort control ('Most funded', 'Ending soon', 'Newest', 'Closest to goal'), Filter Bottom Sheet integration, Skeleton loading, ErrorState with retry, EmptyState, and direct navigation to campaign detail.
+
+7. [UPDATE] backend/app/routers/campaigns.py
+   - Path: backend/app/routers/campaigns.py
+   - Description: Updated FastAPI campaigns list endpoint to support closest_to_goal sort and min_progress query filter parameters.

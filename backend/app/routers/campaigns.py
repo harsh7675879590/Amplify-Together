@@ -52,13 +52,14 @@ def serialize_campaign(campaign: Campaign) -> dict:
 def list_campaigns(
     search: Optional[str] = Query(None, description="Search keyword in title, summary, or creator"),
     category: Optional[str] = Query(None, description="Filter by category"),
-    sort: Optional[str] = Query("trending", description="Sort order: trending, funded, recent, ending_soon"),
+    sort: Optional[str] = Query("trending", description="Sort order: trending, funded, recent, newest, ending_soon, closest_to_goal"),
     status: Optional[str] = Query(None, description="Optional status filter"),
+    min_progress: Optional[float] = Query(None, description="Filter campaigns with at least this percent funded"),
     db: Session = Depends(get_db)
 ):
     query = db.query(Campaign)
 
-    if status:
+    if status and status.lower() != "all":
         query = query.filter(Campaign.status == status)
     else:
         # By default in explore/home, show public campaigns: available_for_funding, goal_reached, promoting, completed
@@ -77,12 +78,18 @@ def list_campaigns(
             )
         )
 
+    if min_progress is not None and min_progress > 0:
+        query = query.filter((Campaign.amount_raised / Campaign.funding_goal * 100) >= min_progress)
+
     if sort == "funded":
         query = query.order_by(desc(Campaign.amount_raised))
-    elif sort == "recent":
+    elif sort in ("recent", "newest"):
         query = query.order_by(desc(Campaign.created_at))
     elif sort == "ending_soon":
         query = query.order_by(asc(Campaign.deadline))
+    elif sort == "closest_to_goal":
+        # Order by highest percent funded under/around 100%
+        query = query.order_by(desc(Campaign.amount_raised / Campaign.funding_goal))
     else:  # trending default
         query = query.order_by(desc(Campaign.amount_raised), desc(Campaign.created_at))
 
