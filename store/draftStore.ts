@@ -1,19 +1,8 @@
 import { create } from "zustand";
 import { api } from "../lib/api";
 
-interface StoryBlock {
-  type: "heading" | "paragraph" | "image" | "stat";
-  text?: string;
-  url?: string;
-  caption?: string;
-  value?: string;
-  label?: string;
-}
+import { StoryBlock, Source as SourceItem } from "../types";
 
-interface SourceItem {
-  title: string;
-  url: string;
-}
 
 export interface DraftState {
   draftId: string | null;

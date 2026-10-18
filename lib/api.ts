@@ -281,15 +281,82 @@ export const api = {
     return { ...mockDraft };
   },
 
-  async saveDraft(updatedData: Partial<Draft>): Promise<Draft> {
+  async saveDraft(
+    arg1?: string | null | Partial<Draft>,
+    arg2?: number,
+    arg3?: any
+  ): Promise<Draft> {
     await delay(150);
-    mockDraft = {
-      ...mockDraft,
-      ...updatedData,
-      updatedAt: new Date().toISOString(),
-    };
+    if (typeof arg1 === "object" && arg1 !== null) {
+      mockDraft = {
+        ...mockDraft,
+        ...arg1,
+        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    } else {
+      if (typeof arg2 === "number") {
+        mockDraft.currentStep = arg2;
+        mockDraft.current_step = arg2;
+      }
+      if (arg3) {
+        mockDraft.data = {
+          ...mockDraft.data,
+          ...arg3,
+          creatorName: arg3.creator_name || arg3.creatorName || mockDraft.data.creatorName,
+          creator_name: arg3.creator_name || arg3.creatorName || mockDraft.data.creator_name,
+          fundingGoal: arg3.funding_goal || arg3.fundingGoal || mockDraft.data.fundingGoal,
+          funding_goal: arg3.funding_goal || arg3.fundingGoal || mockDraft.data.funding_goal,
+          adHeadline: arg3.ad_headline || arg3.adHeadline || mockDraft.data.adHeadline,
+          ad_headline: arg3.ad_headline || arg3.adHeadline || mockDraft.data.ad_headline,
+          adDescription: arg3.ad_description || arg3.adDescription || mockDraft.data.adDescription,
+          ad_description: arg3.ad_description || arg3.adDescription || mockDraft.data.ad_description,
+          ctaText: arg3.cta_text || arg3.ctaText || mockDraft.data.ctaText,
+          cta_text: arg3.cta_text || arg3.ctaText || mockDraft.data.cta_text,
+          adImageUrl: arg3.ad_image_url || arg3.adImageUrl || mockDraft.data.adImageUrl,
+          ad_image_url: arg3.ad_image_url || arg3.adImageUrl || mockDraft.data.ad_image_url,
+        };
+      }
+      mockDraft.updatedAt = new Date().toISOString();
+      mockDraft.updated_at = new Date().toISOString();
+    }
     return { ...mockDraft };
   },
+
+  async generateAIDraft(topic: string): Promise<any> {
+    await delay(500);
+    return {
+      title: "Protect Our Regional Watershed",
+      category: "Environment",
+      creator_name: "Community Watershed Coalition",
+      creatorName: "Community Watershed Coalition",
+      summary: "Proposed chemical storage sits 400ft from the regional water basin. Help us fund verified alerts to 40,000 residents before the zoning board votes.",
+      story: [
+        { type: "heading", text: "What's Happening in the Basin" },
+        { type: "paragraph", text: "Independent hydrogeological assessments confirm potential runoff hazards to municipal tap water serving 40,000 residents." },
+        { type: "stat", value: "40,000", label: "Households reliant on downstream aquifer" },
+        { type: "heading", text: "Why Distribution is Urgent" },
+        { type: "paragraph", text: "Public notice was posted quietly during holidays. By pooling advertising costs, we run high-frequency educational ads directly to affected homeowners." },
+      ],
+      sources: [
+        { title: "County Basin Geological Report 2024", url: "https://waterwatch.org/basin-report" },
+        { title: "Zoning Board Docket Item 14B", url: "https://countygov.org/zoning-14b" },
+      ],
+      ad_headline: "Is your drinking water next to the chemical depot?",
+      adHeadline: "Is your drinking water next to the chemical depot?",
+      ad_description: "Review scientific runoff maps and register your voice before Tuesday's council vote.",
+      adDescription: "Review scientific runoff maps and register your voice before Tuesday's council vote.",
+      cta_text: "View Runoff Map",
+      ctaText: "View Runoff Map",
+      locations: ["Local Municipal County"],
+      interests: ["Clean Water", "Local Government"],
+      channels: ["Meta Feeds", "Local News Sites"],
+      duration_days: 14,
+      funding_goal: 2200,
+      fundingGoal: 2200,
+    };
+  },
+
 
   async submitDraft(draftId: string): Promise<{
     status: string;
